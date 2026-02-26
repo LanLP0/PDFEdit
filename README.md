@@ -1,10 +1,8 @@
 # PDFEdit
 An integrated PDF Editor with all features that one needs, all integrated into a single modern interface
 
-<h3 align="center">
-	<img src="https://raw.githubusercontent.com/LanLP0/PDFEdit/main/Assets/Screenshots/Homepage.png" width="100" alt="Homepage"/><br/>
-	<img src="https://raw.githubusercontent.com/LanLP0/PDFEdit/main/Assets/Screenshots/Editpage.png" width="100" alt="Editpage"/>
-</h3>
+![Homepage](Assets/Screenshots/Homepage.png "Homepage")
+![Editpage](Assets/Screenshots/Editpage.png "Editpage")
 
 Have you ever want a reliable PDF Editor that run localy, meets all your needs, and free of charge?
 
