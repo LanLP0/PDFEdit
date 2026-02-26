@@ -1,0 +1,255 @@
+import { useMemo } from 'react';
+import { usePDFStore } from '../../store/usePDFStore';
+import type { ToolType } from '../../store/usePDFStore';
+import { defaultTextStyle } from '../../store/usePDFStore';
+import { MousePointer2, Type, Image as ImageIcon, PenTool, Layers, Grid2X2, Bold, Italic, Underline, Highlighter, Pencil, GripVertical, RotateCw, Trash2 } from 'lucide-react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import {
+    DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+    arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+const tools: { id: ToolType; icon: typeof MousePointer2; label: string }[] = [
+    { id: 'pointer', icon: MousePointer2, label: 'Select' },
+    { id: 'text', icon: Type, label: 'Text' },
+    { id: 'image', icon: ImageIcon, label: 'Image' },
+    { id: 'signature', icon: PenTool, label: 'Sign' },
+    { id: 'highlight', icon: Highlighter, label: 'Highlight' },
+    { id: 'draw', icon: Pencil, label: 'Draw' },
+];
+
+const fontOptions = ['Inter', 'Arial', 'Helvetica', 'Georgia', 'Times New Roman', 'Courier New', 'Verdana'];
+const fontSizeOptions = [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48];
+
+interface SidebarProps {
+    activePageIndex: number;
+    onPageSelect: (index: number) => void;
+}
+
+export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
+    const { settings, document, setSidebarMode, setActiveTool, setCurrentTextStyle, setBrushSettings, setActiveColor, updateAnnotation, selectAnnotation, rotatePage, deletePage, updatePageOrder } = usePDFStore();
+    const { sidebarMode, activeTool, currentTextStyle, brushSettings, activeColor, selectedAnnotationId, selectedAnnotationPageId } = settings;
+
+    const selectedAnn = selectedAnnotationId && selectedAnnotationPageId
+        ? (document.modifications.annotations[selectedAnnotationPageId] || []).find(a => a.id === selectedAnnotationId)
+        : null;
+    const isEditingTextAnn = selectedAnn?.type === 'text';
+    const editStyle = isEditingTextAnn && selectedAnn?.textStyle ? selectedAnn.textStyle : null;
+    const activeStyle = editStyle || currentTextStyle;
+    const showTextOptions = activeTool === 'text' || isEditingTextAnn;
+    const showHighlightOptions = activeTool === 'highlight';
+    const showDrawOptions = activeTool === 'draw';
+    const showAnyOptions = showTextOptions || showHighlightOptions || showDrawOptions;
+
+    const handleStyleChange = (updates: Record<string, any>) => {
+        if (isEditingTextAnn && selectedAnnotationPageId && selectedAnnotationId && selectedAnn) {
+            updateAnnotation(selectedAnnotationPageId, selectedAnnotationId, { textStyle: { ...(selectedAnn.textStyle || defaultTextStyle), ...updates } });
+        } else {
+            setCurrentTextStyle(updates);
+        }
+    };
+
+    // Thumbnails
+    const order = document.modifications.pageOrder;
+    const fileUrl = useMemo(() => {
+        if (!document.originalBytes) return null;
+        const blob = new Blob([document.originalBytes], { type: 'application/pdf' });
+        return URL.createObjectURL(blob);
+    }, [document.originalBytes]);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = order.indexOf(active.id as string);
+            const newIndex = order.indexOf(over.id as string);
+            if (oldIndex !== -1 && newIndex !== -1) updatePageOrder(arrayMove(order, oldIndex, newIndex));
+        }
+    };
+
+    return (
+        <div className="w-52 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-bg-panel)] flex flex-col overflow-hidden">
+            {/* Tab Headers in Boxes */}
+            <div className="flex items-center justify-center gap-2 px-3 py-3 shrink-0">
+                <button
+                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all border ${sidebarMode === 'tools' ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-bg-active)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'}`}
+                    onClick={() => setSidebarMode('tools')}
+                >
+                    <Layers size={15} /> Tools
+                </button>
+                <button
+                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all border ${sidebarMode === 'thumbnails' ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-bg-active)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'}`}
+                    onClick={() => setSidebarMode('thumbnails')}
+                >
+                    <Grid2X2 size={15} /> Pages
+                </button>
+            </div>
+
+            <div className="mx-3 h-px bg-[var(--color-border)]"></div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+                {sidebarMode === 'tools' && (
+                    <div className="py-3 space-y-3">
+                        {/* Unified Color Picker — always visible when a drawing tool is active */}
+                        {showAnyOptions && (
+                            <div className="mx-3">
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">Color</span>
+                                <label className="flex items-center w-full h-9 rounded-lg border border-[var(--color-border)] cursor-pointer overflow-hidden transition-all hover:border-[var(--color-primary)] relative">
+                                    <div className="w-full h-full rounded-lg" style={{ backgroundColor: activeColor }}></div>
+                                    <input
+                                        type="color"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        value={activeColor}
+                                        onChange={(e) => {
+                                            setActiveColor(e.target.value);
+                                            if (isEditingTextAnn) handleStyleChange({ color: e.target.value });
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        )}
+
+                        {/* Text Options */}
+                        {showTextOptions && (
+                            <div className="mx-3">
+                                <div className="bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded-xl p-3 space-y-2.5">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">{isEditingTextAnn ? 'Edit Text' : 'Text Style'}</span>
+                                    <select className="w-full px-2 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-panel)] text-[var(--color-text-main)] text-xs outline-none focus:border-[var(--color-primary)]"
+                                        value={activeStyle.fontFamily} onChange={(e) => handleStyleChange({ fontFamily: e.target.value })}>
+                                        {fontOptions.map(f => <option key={f} value={f}>{f}</option>)}
+                                    </select>
+                                    <select className="w-full px-2 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-panel)] text-[var(--color-text-main)] text-xs outline-none focus:border-[var(--color-primary)]"
+                                        value={activeStyle.fontSize} onChange={(e) => handleStyleChange({ fontSize: Number(e.target.value) })}>
+                                        {fontSizeOptions.map(s => <option key={s} value={s}>{s}px</option>)}
+                                    </select>
+                                    <div className="flex gap-1">
+                                        <button className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${activeStyle.bold ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border border-[var(--color-border)]'}`}
+                                            onClick={() => handleStyleChange({ bold: !activeStyle.bold })}><Bold size={14} /></button>
+                                        <button className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${activeStyle.italic ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border border-[var(--color-border)]'}`}
+                                            onClick={() => handleStyleChange({ italic: !activeStyle.italic })}><Italic size={14} /></button>
+                                        <button className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${activeStyle.underline ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border border-[var(--color-border)]'}`}
+                                            onClick={() => handleStyleChange({ underline: !activeStyle.underline })}><Underline size={14} /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Highlight Options */}
+                        {showHighlightOptions && (
+                            <div className="mx-3">
+                                <div className="bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded-xl p-3 space-y-2.5">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Highlight</span>
+                                    <div>
+                                        <span className="text-[10px] text-[var(--color-text-muted)] block mb-1">Size: {brushSettings.highlightSize}px</span>
+                                        <input type="range" min="8" max="48" value={brushSettings.highlightSize}
+                                            onChange={(e) => setBrushSettings({ highlightSize: Number(e.target.value) })}
+                                            className="w-full h-1.5 rounded-full appearance-none bg-[var(--color-border)] accent-[var(--color-primary)]" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Draw Options */}
+                        {showDrawOptions && (
+                            <div className="mx-3">
+                                <div className="bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded-xl p-3 space-y-2.5">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Draw</span>
+                                    <div>
+                                        <span className="text-[10px] text-[var(--color-text-muted)] block mb-1">Size: {brushSettings.drawSize}px</span>
+                                        <input type="range" min="1" max="20" value={brushSettings.drawSize}
+                                            onChange={(e) => setBrushSettings({ drawSize: Number(e.target.value) })}
+                                            className="w-full h-1.5 rounded-full appearance-none bg-[var(--color-border)] accent-[var(--color-primary)]" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tool List - each in its own box */}
+                        <div className="flex flex-col gap-1.5 px-3">
+                            {tools.map((t) => {
+                                const Icon = t.icon;
+                                const isActive = activeTool === t.id;
+                                return (
+                                    <button key={t.id}
+                                        className={`py-2.5 px-3 w-full rounded-lg flex items-center gap-3 text-sm font-medium transition-all border ${isActive ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-bg-active)] shadow-sm' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)]'}`}
+                                        onClick={() => { setActiveTool(t.id); if (t.id !== 'text') selectAnnotation(null, null); }}
+                                    >
+                                        <Icon size={18} />
+                                        {t.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {sidebarMode === 'thumbnails' && (
+                    <div className="p-2 space-y-2">
+                        <div className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                            {order.length} Pages — Drag to reorder
+                        </div>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={order} strategy={verticalListSortingStrategy}>
+                                {order.map((pageId, index) => (
+                                    <SortableThumbnail key={pageId} pageId={pageId} index={index}
+                                        isActive={index === activePageIndex} fileUrl={fileUrl}
+                                        rotation={document.modifications.rotations[pageId] || 0}
+                                        onSelect={() => onPageSelect(index)}
+                                        onRotate={() => rotatePage(pageId, 90)}
+                                        onDelete={() => { if (order.length > 1) deletePage(pageId); }} />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function SortableThumbnail({ pageId, index, isActive, fileUrl, rotation, onSelect, onRotate, onDelete }: {
+    pageId: string; index: number; isActive: boolean; fileUrl: string | null; rotation: number;
+    onSelect: () => void; onRotate: () => void; onDelete: () => void;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pageId });
+    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, zIndex: isDragging ? 10 : 'auto' as const };
+    const pageNumber = parseInt(pageId.split('-')[1], 10);
+
+    return (
+        <div ref={setNodeRef} style={style}
+            className={`group rounded-lg border transition-all cursor-pointer mb-2 ${isActive ? 'border-[var(--color-primary)] shadow-md bg-[var(--color-bg-hover)]' : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'}`}
+            onClick={onSelect}>
+            <div className="flex items-center gap-1.5 p-1.5">
+                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">
+                    <GripVertical size={12} />
+                </div>
+                <div className="flex-1 overflow-hidden rounded bg-white">
+                    {fileUrl && (
+                        <Document file={fileUrl} loading={<div className="w-full h-16 bg-gray-100 animate-pulse rounded" />}>
+                            <Page pageNumber={pageNumber} width={140} rotate={rotation} renderTextLayer={false} renderAnnotationLayer={false} />
+                        </Document>
+                    )}
+                </div>
+            </div>
+            <div className="flex items-center justify-between px-2 pb-1.5">
+                <span className="text-[10px] font-medium text-[var(--color-text-muted)]">Page {index + 1}</span>
+                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)]"
+                        onClick={(e) => { e.stopPropagation(); onRotate(); }} title="Rotate"><RotateCw size={11} /></button>
+                    <button className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-50"
+                        onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete"><Trash2 size={11} /></button>
+                </div>
+            </div>
+        </div>
+    );
+}
