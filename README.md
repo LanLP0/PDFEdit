@@ -1,5 +1,5 @@
 # PDFEdit
-An integrated PDF Editor with all features that one needs, all integrated into a single modern interface
+A PDF Editor with all features that one needs, all integrated into a single modern interface
 
 ![Homepage](Assets/Screenshots/Homepage.png "Homepage")
 ![Editpage](Assets/Screenshots/Editpage.png "Editpage")
