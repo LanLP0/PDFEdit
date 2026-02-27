@@ -4,7 +4,7 @@ A PDF Editor with all features that one needs, all integrated into a single mode
 ![Homepage](Assets/Screenshots/Homepage.png "Homepage")
 ![Editpage](Assets/Screenshots/Editpage.png "Editpage")
 
-Have you ever want a reliable PDF Editor that run localy, meets all your needs, and free of charge?
+Have you ever want a reliable PDF Editor that run locally, meets all your needs, and free of charge?
 
 PDFEdit aim to replace messy PDF tools that just have too many features, but are separete from one another, all while being free of charge with an UI that resembles Acrobat.
 
@@ -29,7 +29,7 @@ PDFEdit aim to replace messy PDF tools that just have too many features, but are
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/PDFEdit.git
+   git clone https://github.com/LanLP0/PDFEdit.git
    ```
 2. Install dependencies:
    ```bash
@@ -44,7 +44,7 @@ PDFEdit aim to replace messy PDF tools that just have too many features, but are
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
