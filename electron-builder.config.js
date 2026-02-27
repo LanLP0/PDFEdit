@@ -21,6 +21,7 @@ const config = {
         buildResources: 'Assets',
     },
 
+
     // ── Windows ──────────────────────────────────────────────────────────────
     win: {
         target: [

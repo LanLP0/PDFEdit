@@ -55,64 +55,64 @@ function createWindow() {
         mainWindow = null;
     });
 
-    buildMenu();
+    // buildMenu();
 }
 
-function buildMenu() {
-    const isMac = process.platform === 'darwin';
+// function buildMenu() {
+//     const isMac = process.platform === 'darwin';
 
-    const template: Electron.MenuItemConstructorOptions[] = [
-        ...(isMac
-            ? [{ role: 'appMenu' as const }]
-            : []),
-        // {
-        //     label: 'File',
-        //     submenu: [
-        //         {
-        //             label: 'Open…',
-        //             accelerator: 'CmdOrCtrl+O',
-        //             click: async () => {
-        //                 const result = await dialog.showOpenDialog(mainWindow!, {
-        //                     title: 'Open PDF',
-        //                     filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
-        //                     properties: ['openFile'],
-        //                 });
-        //                 if (!result.canceled && result.filePaths.length > 0) {
-        //                     mainWindow!.webContents.send('open-file', result.filePaths[0]);
-        //                 }
-        //             },
-        //         },
-        //         { type: 'separator' },
-        //         isMac
-        //             ? { role: 'close' as const }
-        //             : { role: 'quit' as const },
-        //     ],
-        // },
-        {
-            label: 'View',
-            submenu: [
-                { role: 'reload' as const },
-                { type: 'separator' as const },
-                { role: 'resetZoom' as const },
-                { role: 'zoomIn' as const },
-                { role: 'zoomOut' as const },
-                { type: 'separator' as const },
-                { role: 'togglefullscreen' as const },
-            ],
-        },
-        {
-            label: 'Help',
-            submenu: [
-                {
-                    label: 'Learn More',
-                    click: () => shell.openExternal('https://github.com/LanLP0/PDFEdit'),
-                },
-            ],
-        },
-    ];
+//     const template: Electron.MenuItemConstructorOptions[] = [
+//         ...(isMac
+//             ? [{ role: 'appMenu' as const }]
+//             : []),
+//         // {
+//         //     label: 'File',
+//         //     submenu: [
+//         //         {
+//         //             label: 'Open…',
+//         //             accelerator: 'CmdOrCtrl+O',
+//         //             click: async () => {
+//         //                 const result = await dialog.showOpenDialog(mainWindow!, {
+//         //                     title: 'Open PDF',
+//         //                     filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
+//         //                     properties: ['openFile'],
+//         //                 });
+//         //                 if (!result.canceled && result.filePaths.length > 0) {
+//         //                     mainWindow!.webContents.send('open-file', result.filePaths[0]);
+//         //                 }
+//         //             },
+//         //         },
+//         //         { type: 'separator' },
+//         //         isMac
+//         //             ? { role: 'close' as const }
+//         //             : { role: 'quit' as const },
+//         //     ],
+//         // },
+//         {
+//             label: 'View',
+//             submenu: [
+//                 { role: 'reload' as const },
+//                 { type: 'separator' as const },
+//                 { role: 'resetZoom' as const },
+//                 { role: 'zoomIn' as const },
+//                 { role: 'zoomOut' as const },
+//                 { type: 'separator' as const },
+//                 { role: 'togglefullscreen' as const },
+//             ],
+//         },
+//         {
+//             label: 'Help',
+//             submenu: [
+//                 {
+//                     label: 'Learn More',
+//                     click: () => shell.openExternal('https://github.com/LanLP0/PDFEdit'),
+//                 },
+//             ],
+//         },
+//     ];
 
-    Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-}
+//     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+// }
 
 // ─── IPC Handlers ────────────────────────────────────────────────────────────
 

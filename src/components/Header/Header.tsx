@@ -82,7 +82,7 @@ export function Header() {
                     onClick={handleGoHome}
                     title={document.originalBytes ? 'Back to Home' : 'PDFEdit'}
                 >
-                    PDFEdit
+                    <img src="/icon.svg" alt="PDFEdit" className="w-8 h-8" />
                 </button>
                 {document.originalBytes && (
                     <div className="flex items-center gap-2">
