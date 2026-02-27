@@ -5,10 +5,13 @@ import electron from 'vite-plugin-electron/simple'
 import { resolve } from 'node:path'
 
 const isElectronBuild = process.env.ELECTRON === '1';
+const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: isElectronBuild ? './' : '/',
+  base: isGithubActions
+    ? "/PDFEdit/"
+    : isElectronBuild ? './' : '/',
   plugins: [
     react(),
     tailwindcss(),
