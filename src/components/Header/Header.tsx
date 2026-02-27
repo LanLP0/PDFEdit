@@ -1,11 +1,14 @@
-import { Download, Upload, Moon, Sun, Monitor } from 'lucide-react';
+import { Download, Moon, Sun, Monitor, Undo2, Redo2 } from 'lucide-react';
 import { usePDFStore } from '../../store/usePDFStore';
 import { PdfEngine } from '../../lib/pdf/PdfEngine';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export function Header() {
-    const { document, settings, setTheme, closeDocument } = usePDFStore();
+    const { document, settings, setTheme, closeDocument, renameDocument, undo, redo, canUndo, canRedo } = usePDFStore();
     const [isExporting, setIsExporting] = useState(false);
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [editName, setEditName] = useState('');
+    const nameInputRef = useRef<HTMLInputElement>(null);
 
     const handleThemeCycle = () => {
         if (settings.theme === 'light') setTheme('dark');
@@ -22,7 +25,7 @@ export function Header() {
             const url = URL.createObjectURL(blob);
             const a = window.document.createElement('a');
             a.href = url;
-            a.download = `Exported_${document.originalFile?.name || 'Document.pdf'}`;
+            a.download = `${document.fileName}${document.fileExtension}`;
             window.document.body.appendChild(a);
             a.click();
             window.document.body.removeChild(a);
@@ -49,6 +52,26 @@ export function Header() {
         closeDocument();
     };
 
+    const startEditing = () => {
+        setEditName(document.fileName);
+        setIsEditingName(true);
+    };
+
+    useEffect(() => {
+        if (isEditingName && nameInputRef.current) {
+            nameInputRef.current.focus();
+            nameInputRef.current.select();
+        }
+    }, [isEditingName]);
+
+    const finishEditing = () => {
+        const trimmed = editName.trim();
+        if (trimmed && trimmed !== document.fileName) {
+            renameDocument(trimmed);
+        }
+        setIsEditingName(false);
+    };
+
     const ThemeIcon = settings.theme === 'light' ? Sun : settings.theme === 'dark' ? Moon : Monitor;
 
     return (
@@ -61,9 +84,50 @@ export function Header() {
                 >
                     PDFEdit
                 </button>
-                {document.originalFile && (
-                    <div className="text-sm px-3 py-1 bg-[var(--color-bg-app)] rounded-md border border-[var(--color-border)] font-medium text-[var(--color-text-main)] shadow-sm">
-                        {document.originalFile.name}
+                {document.originalBytes && (
+                    <div className="flex items-center gap-2">
+                        {isEditingName ? (
+                            <div className="flex items-center bg-[var(--color-bg-app)] rounded-md border border-[var(--color-primary)] shadow-sm overflow-hidden">
+                                <input
+                                    ref={nameInputRef}
+                                    type="text"
+                                    className="text-sm px-3 py-1 bg-transparent outline-none text-[var(--color-text-main)] font-medium min-w-[120px]"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    onBlur={finishEditing}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') finishEditing(); if (e.key === 'Escape') setIsEditingName(false); }}
+                                />
+                                <span className="text-sm text-[var(--color-text-muted)] pr-3 select-none">{document.fileExtension}</span>
+                            </div>
+                        ) : (
+                            <button
+                                className="text-sm px-3 py-1 bg-[var(--color-bg-app)] rounded-md border border-[var(--color-border)] font-medium text-[var(--color-text-main)] shadow-sm hover:border-[var(--color-primary)] transition-colors cursor-text"
+                                onClick={startEditing}
+                                title="Click to rename"
+                            >
+                                {document.fileName}{document.fileExtension}
+                            </button>
+                        )}
+
+                        {/* Undo / Redo buttons */}
+                        <div className="flex items-center gap-1 ml-1">
+                            <button
+                                className="btn-icon p-1.5"
+                                onClick={undo}
+                                disabled={!canUndo}
+                                title="Undo (Ctrl+Z)"
+                            >
+                                <Undo2 size={16} />
+                            </button>
+                            <button
+                                className="btn-icon p-1.5"
+                                onClick={redo}
+                                disabled={!canRedo}
+                                title="Redo (Ctrl+Shift+Z)"
+                            >
+                                <Redo2 size={16} />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -72,17 +136,11 @@ export function Header() {
                 <button onClick={handleThemeCycle} className="btn-icon" title={`Theme: ${settings.theme}`}>
                     <ThemeIcon size={20} />
                 </button>
-                {document.originalFile && (
-                    <>
-                        <button onClick={closeDocument} className="btn-secondary">
-                            <Upload size={16} />
-                            Open Another
-                        </button>
-                        <button className="btn-primary flex items-center gap-2" onClick={handleExport} disabled={isExporting}>
-                            <Download size={16} />
-                            {isExporting ? 'Exporting...' : 'Export'}
-                        </button>
-                    </>
+                {document.originalBytes && (
+                    <button className="btn-primary flex items-center gap-2" onClick={handleExport} disabled={isExporting}>
+                        <Download size={16} />
+                        {isExporting ? 'Exporting...' : 'Export'}
+                    </button>
                 )}
             </div>
         </header>

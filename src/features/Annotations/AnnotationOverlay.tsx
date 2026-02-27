@@ -1,25 +1,55 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { usePDFStore } from '../../store/usePDFStore';
-import type { Annotation, StrokePoint } from '../../store/usePDFStore';
-import { defaultTextStyle } from '../../store/usePDFStore';
+import type { Annotation, StrokePoint, LinkPayload } from '../../store/usePDFStore';
+import { defaultTextStyle, availableFonts } from '../../store/usePDFStore';
 import { Trash2 } from 'lucide-react';
 
 interface AnnotationOverlayProps {
     pageId: string;
+    zoom: number;
 }
 
-export function AnnotationOverlay({ pageId }: AnnotationOverlayProps) {
+// Calculate bounding box of stroke points (in percentage coordinates)
+function getStrokeBBox(points: StrokePoint[], strokeWidth: number) {
+    if (points.length === 0) return { x: 0, y: 0, w: 0, h: 0 };
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of points) {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+    }
+    // Add padding for stroke width (convert from pt to percentage: strokeWidth/612*100)
+    const pad = (strokeWidth / 612) * 100 * 0.6;
+    return {
+        x: minX - pad,
+        y: minY - pad,
+        w: (maxX - minX) + pad * 2,
+        h: (maxY - minY) + pad * 2,
+    };
+}
+
+export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
     const { document, settings, addAnnotation, selectAnnotation } = usePDFStore();
     const overlayRef = useRef<HTMLDivElement>(null);
     const annotations: Annotation[] = document.modifications.annotations[pageId] || [];
     const activeTool = settings.activeTool;
     const selectedId = settings.selectedAnnotationPageId === pageId ? settings.selectedAnnotationId : null;
 
+    // Scale factor: at 100% zoom the page is 612px matching 612pt PDF
+    const scaleFactor = zoom / 100;
+
     // Stroke drawing state (for highlight/draw tools)
     const [isDrawing, setIsDrawing] = useState(false);
     const [currentStroke, setCurrentStroke] = useState<StrokePoint[]>([]);
 
-    const getRelativePos = (e: React.PointerEvent): StrokePoint => {
+    // Link dialog state
+    const [showLinkDialog, setShowLinkDialog] = useState(false);
+    const [linkPos, setLinkPos] = useState({ x: 0, y: 0 });
+    const [linkText, setLinkText] = useState('');
+    const [linkUrl, setLinkUrl] = useState('https://');
+
+    const getRelativePos = (e: React.PointerEvent | React.MouseEvent): StrokePoint => {
         const rect = overlayRef.current!.getBoundingClientRect();
         return {
             x: ((e.clientX - rect.left) / rect.width) * 100,
@@ -57,6 +87,13 @@ export function AnnotationOverlay({ pageId }: AnnotationOverlayProps) {
             });
             selectAnnotation(pageId, id);
             usePDFStore.getState().setActiveTool('pointer');
+        }
+
+        if (activeTool === 'link') {
+            setLinkPos(pos);
+            setLinkText('');
+            setLinkUrl('https://');
+            setShowLinkDialog(true);
         }
 
         if (activeTool === 'image') {
@@ -101,7 +138,6 @@ export function AnnotationOverlay({ pageId }: AnnotationOverlayProps) {
         }
 
         const bs = usePDFStore.getState().settings.brushSettings;
-        const ac = usePDFStore.getState().settings.activeColor;
         const type = activeTool as 'highlight' | 'draw';
         const isHighlight = type === 'highlight';
 
@@ -111,12 +147,25 @@ export function AnnotationOverlay({ pageId }: AnnotationOverlayProps) {
             x: 0, y: 0,
             payload: null,
             points: currentStroke,
-            strokeColor: ac,
+            strokeColor: isHighlight ? bs.highlightColor : bs.drawColor,
             strokeWidth: isHighlight ? bs.highlightSize : bs.drawSize,
             strokeOpacity: isHighlight ? 0.35 : 1,
         });
 
         setCurrentStroke([]);
+    };
+
+    const handleInsertLink = () => {
+        if (!linkText.trim() || !linkUrl.trim()) return;
+        const id = crypto.randomUUID();
+        const payload: LinkPayload = { text: linkText.trim(), url: linkUrl.trim() };
+        addAnnotation(pageId, {
+            id, type: 'link', x: linkPos.x, y: linkPos.y,
+            payload,
+        });
+        selectAnnotation(pageId, id);
+        setShowLinkDialog(false);
+        usePDFStore.getState().setActiveTool('pointer');
     };
 
     // Build SVG path from points
@@ -131,28 +180,13 @@ export function AnnotationOverlay({ pageId }: AnnotationOverlayProps) {
 
     const bs = settings.brushSettings;
     const isHighlightActive = activeTool === 'highlight';
-    const currentColor = settings.activeColor;
+    const currentColor = isHighlightActive ? bs.highlightColor : bs.drawColor;
 
-    // Generate custom cursor for drawing tools
-    let cursorStyle = 'default';
-    if (activeTool !== 'pointer') {
-        if (activeTool === 'highlight' || activeTool === 'draw') {
-            const size = activeTool === 'highlight' ? bs.highlightSize : bs.drawSize;
-            const opacity = activeTool === 'highlight' ? 0.35 : 1;
-            const sizeStr = Math.max(8, size); // ensure minimum size for svg
-            const color = currentColor || '#000000';
+    const cursorStyle = activeTool === 'pointer' ? 'default' : 'crosshair';
 
-            // Create an SVG circle representing the brush
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sizeStr}" height="${sizeStr}" viewBox="0 0 ${sizeStr} ${sizeStr}">
-                <circle cx="${sizeStr / 2}" cy="${sizeStr / 2}" r="${sizeStr / 2 - 0.5}" fill="${color}" fill-opacity="${opacity}" stroke="#000000" stroke-opacity="0.5" stroke-width="1"/>
-            </svg>`;
-
-            const encodedSvg = encodeURIComponent(svg.trim()).replace(/'/g, '%27').replace(/"/g, '%22');
-            cursorStyle = `url("data:image/svg+xml;charset=utf-8,${encodedSvg}") ${sizeStr / 2} ${sizeStr / 2}, crosshair`;
-        } else {
-            cursorStyle = 'crosshair';
-        }
-    }
+    // Split annotations into strokes and others
+    const strokeAnnotations = annotations.filter(a => a.type === 'highlight' || a.type === 'draw');
+    const otherAnnotations = annotations.filter(a => a.type !== 'highlight' && a.type !== 'draw');
 
     return (
         <div
@@ -163,25 +197,9 @@ export function AnnotationOverlay({ pageId }: AnnotationOverlayProps) {
             onPointerUp={handlePointerUp}
             style={{ cursor: cursorStyle }}
         >
-            {/* SVG layer for strokes */}
-            <svg className="stroke-svg absolute top-0 left-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                {/* Existing stroke annotations */}
-                {annotations.filter(a => a.type === 'highlight' || a.type === 'draw').map(ann => (
-                    <path
-                        key={ann.id}
-                        d={pointsToPath(ann.points || [])}
-                        fill="none"
-                        stroke={ann.strokeColor || '#000'}
-                        strokeWidth={((ann.strokeWidth || 3) / 612) * 100} // convert px to viewBox units
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        opacity={ann.strokeOpacity ?? 1}
-                        vectorEffect="non-scaling-stroke"
-                        style={{ pointerEvents: 'none' }}
-                    />
-                ))}
-                {/* Active stroke being drawn */}
-                {currentStroke.length > 1 && (
+            {/* Active stroke being drawn — uses a full-page SVG */}
+            {currentStroke.length > 1 && (
+                <svg className="stroke-svg absolute top-0 left-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <path
                         d={pointsToPath(currentStroke)}
                         fill="none"
@@ -190,14 +208,13 @@ export function AnnotationOverlay({ pageId }: AnnotationOverlayProps) {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         opacity={isHighlightActive ? 0.35 : 1}
-                        vectorEffect="non-scaling-stroke"
                     />
-                )}
-            </svg>
+                </svg>
+            )}
 
-            {/* Regular annotations (text, image, signature) */}
-            {annotations.filter(a => a.type !== 'highlight' && a.type !== 'draw').map((ann: Annotation) => (
-                <DraggableAnnotation
+            {/* Existing stroke annotations — each in its own positioned container */}
+            {strokeAnnotations.map(ann => (
+                <StrokeAnnotation
                     key={ann.id}
                     pageId={pageId}
                     annotation={ann}
@@ -205,15 +222,171 @@ export function AnnotationOverlay({ pageId }: AnnotationOverlayProps) {
                     isSelected={selectedId === ann.id}
                 />
             ))}
+
+            {/* Regular annotations (text, image, signature, link) */}
+            {otherAnnotations.map((ann: Annotation) => (
+                <DraggableAnnotation
+                    key={ann.id}
+                    pageId={pageId}
+                    annotation={ann}
+                    containerRef={overlayRef}
+                    isSelected={selectedId === ann.id}
+                    scaleFactor={scaleFactor}
+                />
+            ))}
+
+            {/* Link Dialog */}
+            {showLinkDialog && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowLinkDialog(false)}>
+                    <div className="bg-[var(--color-bg-panel)] rounded-xl shadow-xl border border-[var(--color-border)] p-5 w-80 space-y-3" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-sm font-semibold text-[var(--color-text-main)]">Add URL Link</h3>
+                        <div>
+                            <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Display Text</label>
+                            <input
+                                type="text"
+                                autoFocus
+                                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] text-sm outline-none focus:border-[var(--color-primary)]"
+                                placeholder="Click here"
+                                value={linkText}
+                                onChange={(e) => setLinkText(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleInsertLink(); }}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">URL</label>
+                            <input
+                                type="url"
+                                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] text-sm outline-none focus:border-[var(--color-primary)]"
+                                placeholder="https://example.com"
+                                value={linkUrl}
+                                onChange={(e) => setLinkUrl(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleInsertLink(); }}
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-1">
+                            <button className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]" onClick={() => setShowLinkDialog(false)}>Cancel</button>
+                            <button className="px-3 py-1.5 text-sm rounded-lg bg-[var(--color-primary)] text-white font-medium hover:opacity-90 disabled:opacity-50"
+                                onClick={handleInsertLink} disabled={!linkText.trim() || !linkUrl.trim()}>Insert</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
-function DraggableAnnotation({ pageId, annotation, containerRef, isSelected }: {
+// StrokeAnnotation: selectable, movable, deletable stroke rendered as a positioned SVG
+function StrokeAnnotation({ pageId, annotation, containerRef, isSelected }: {
     pageId: string;
     annotation: Annotation;
     containerRef: React.RefObject<HTMLDivElement | null>;
     isSelected: boolean;
+}) {
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStart = useRef<{ x: number; y: number } | null>(null);
+    const updateAnnotation = usePDFStore((state) => state.updateAnnotation);
+    const deleteAnnotation = usePDFStore((state) => state.deleteAnnotation);
+    const selectAnnotation = usePDFStore((state) => state.selectAnnotation);
+
+    const points = annotation.points || [];
+    const sw = annotation.strokeWidth || 3;
+    const bbox = useMemo(() => getStrokeBBox(points, sw), [points, sw]);
+
+    // Map points into local SVG coordinates relative to the bounding box
+    const localPath = useMemo(() => {
+        if (points.length === 0) return '';
+        let d = `M ${points[0].x - bbox.x} ${points[0].y - bbox.y}`;
+        for (let i = 1; i < points.length; i++) {
+            d += ` L ${points[i].x - bbox.x} ${points[i].y - bbox.y}`;
+        }
+        return d;
+    }, [points, bbox]);
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        e.stopPropagation();
+        selectAnnotation(pageId, annotation.id);
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        dragStart.current = {
+            x: ((e.clientX - rect.left) / rect.width) * 100,
+            y: ((e.clientY - rect.top) / rect.height) * 100,
+        };
+        setIsDragging(true);
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!isDragging || !containerRef.current || !dragStart.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const curX = ((e.clientX - rect.left) / rect.width) * 100;
+        const curY = ((e.clientY - rect.top) / rect.height) * 100;
+        const dx = curX - dragStart.current.x;
+        const dy = curY - dragStart.current.y;
+        dragStart.current = { x: curX, y: curY };
+
+        // Offset all points
+        const newPoints = points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+        updateAnnotation(pageId, annotation.id, { points: newPoints });
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        setIsDragging(false);
+        dragStart.current = null;
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    };
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        deleteAnnotation(pageId, annotation.id);
+    };
+
+    if (bbox.w <= 0 && bbox.h <= 0) return null;
+
+    return (
+        <div
+            className={`absolute cursor-move ${isSelected ? 'ring-2 ring-[var(--color-primary)] ring-offset-1 rounded' : ''}`}
+            style={{
+                left: `${bbox.x}%`,
+                top: `${bbox.y}%`,
+                width: `${bbox.w}%`,
+                height: `${bbox.h}%`,
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+        >
+            <svg className="absolute top-0 left-0 w-full h-full" viewBox={`0 0 ${bbox.w} ${bbox.h}`} preserveAspectRatio="none">
+                <path
+                    d={localPath}
+                    fill="none"
+                    stroke={annotation.strokeColor || '#000'}
+                    strokeWidth={((sw) / 612) * 100}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity={annotation.strokeOpacity ?? 1}
+                />
+            </svg>
+            {isSelected && (
+                <div className="absolute -top-5 -right-5 z-30">
+                    <button
+                        className="w-8 h-8 rounded-lg bg-[var(--color-bg-panel)] border border-[var(--color-border)] shadow-md flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                        onClick={handleDelete}
+                        title="Delete annotation"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, scaleFactor }: {
+    pageId: string;
+    annotation: Annotation;
+    containerRef: React.RefObject<HTMLDivElement | null>;
+    isSelected: boolean;
+    scaleFactor: number;
 }) {
     const [isDragging, setIsDragging] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -246,6 +419,10 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected }: {
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (annotation.type === 'text') setIsEditing(true);
+        if (annotation.type === 'link') {
+            const payload = annotation.payload as LinkPayload;
+            if (payload.url) window.open(payload.url, '_blank');
+        }
     };
 
     const handleDelete = (e: React.MouseEvent) => {
@@ -254,14 +431,18 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected }: {
     };
 
     const textStyle = annotation.textStyle || defaultTextStyle;
+    const fontDef = availableFonts.find(f => f.name === textStyle.fontFamily) || availableFonts[0];
+    const scaledFontSize = textStyle.fontSize * scaleFactor;
     const textCss: React.CSSProperties = {
-        fontFamily: textStyle.fontFamily,
-        fontSize: `${textStyle.fontSize}px`,
+        fontFamily: fontDef.webFamily,
+        fontSize: `${scaledFontSize}px`,
         fontWeight: textStyle.bold ? 'bold' : 'normal',
         fontStyle: textStyle.italic ? 'italic' : 'normal',
         textDecoration: textStyle.underline ? 'underline' : 'none',
         color: textStyle.color || '#000000',
     };
+
+    const scaledLinkFontSize = 14 * scaleFactor;
 
     return (
         <div
@@ -306,6 +487,12 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected }: {
                         {annotation.payload}
                     </div>
                 )
+            )}
+
+            {annotation.type === 'link' && (
+                <div className="whitespace-nowrap select-none pointer-events-none flex items-center gap-1" style={{ fontSize: `${scaledLinkFontSize}px` }}>
+                    <span className="text-blue-600 underline cursor-pointer">{(annotation.payload as LinkPayload).text}</span>
+                </div>
             )}
 
             {(annotation.type === 'image' || annotation.type === 'signature') && (

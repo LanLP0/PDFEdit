@@ -78,13 +78,23 @@ export function SignatureModal({ pageId }: SignatureModalProps) {
     };
 
     const handleSave = () => {
-        if (!canvasRef.current) return;
-        const dataUrl = canvasRef.current.toDataURL('image/png');
+        const canvas = canvasRef.current;
+        if (!canvas) return;
 
-        // Insert into center of page
+        // Create a temp canvas with white background + signature composited
+        const tempCanvas = window.document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d')!;
+        tempCtx.fillStyle = '#FFFFFF';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(canvas, 0, 0);
+
+        const dataUrl = tempCanvas.toDataURL('image/png');
+
         addAnnotation(pageId, {
             id: crypto.randomUUID(),
-            type: 'image', // Treat signature as an image slice
+            type: 'image',
             x: 50,
             y: 50,
             width: 40,

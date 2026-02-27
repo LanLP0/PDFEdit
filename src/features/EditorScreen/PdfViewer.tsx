@@ -51,7 +51,7 @@ export function PdfViewer({ pageId, zoom }: PdfViewerProps) {
             </Document>
 
             <div className="absolute top-0 left-0 w-full h-full z-10">
-                <AnnotationOverlay pageId={pageId} />
+                <AnnotationOverlay pageId={pageId} zoom={zoom} />
             </div>
         </div>
     );

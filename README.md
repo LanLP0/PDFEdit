@@ -10,9 +10,14 @@ PDFEdit aim to replace messy PDF tools that just have too many features, but are
 
 <br/>
 
-***NOTE: This project is entirely vibe-coded with Claude Sonnet and is still a Work In Progress***
+***NOTE: This project is entirely vibe-coded with Claude Opus and is still a Work In Progress***
 
-> **WIP:** Currently, there are some bugs with the export function related to annotations, which is currently handled in `lib/pdf/PdfEngine.ts` and there is not yet the ability to undo-redo, edit text, edit annotations after export. Contributions are welcome!
+## Features
+
+- **Modify PDF:** Merge, Reorder, Rotate, Delete Pages
+- **Various PDF Tools:** Add Text-Image-Link, Add Signature, Highlight, Draw
+- **Google Drive Integration** (Planned)
+- **Request Signature Online** (Planned)
 
 
 ## Getting Started
@@ -49,4 +54,4 @@ Contributions are what make the open source community such an amazing place to l
 
 ## License
 
-Distributed under the GNU GPLv3 License. See `LICENSE` for more information.
+Distributed under the `GNU GPLv3` License. See `LICENSE` for more information.

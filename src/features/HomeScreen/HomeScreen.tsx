@@ -1,13 +1,12 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { UploadCloud, FileText, Clock, File, Trash2 } from 'lucide-react';
-import { usePDFStore } from '../../store/usePDFStore';
-import { getRecentFiles, addRecentFile, removeRecentFile } from '../../lib/recentFiles';
+import { getRecentFiles, removeRecentFile } from '../../lib/recentFiles';
 import type { RecentFileEntry } from '../../lib/recentFiles';
+import { openFile } from '../../lib/openFile';
 
 export function HomeScreen() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const recentInputRef = useRef<HTMLInputElement>(null);
-    const loadDocument = usePDFStore((state) => state.loadDocument);
     const [isDragging, setIsDragging] = useState(false);
     const [recentFiles, setRecentFiles] = useState<RecentFileEntry[]>([]);
 
@@ -23,34 +22,12 @@ export function HomeScreen() {
     }, []);
 
     const handleFileSelect = async (file: File) => {
-        if (file.type !== 'application/pdf') {
-            alert("Please select a valid PDF file.");
-            return;
-        }
+        await openFile(file);
+        // Refresh recent files list after opening
         try {
-            const buffer = await file.arrayBuffer();
-            const { PDFDocument } = await import('pdf-lib');
-            const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false });
-            const numPages = pdfDoc.getPageCount();
-            const initialPages = Array.from({ length: numPages }, (_, i) => `page-${i + 1}`);
-            loadDocument(file, buffer, initialPages);
-
-            const entry: RecentFileEntry = {
-                id: `${file.name}-${file.size}`,
-                name: file.name,
-                size: file.size,
-                lastOpened: Date.now(),
-                pageCount: numPages,
-            };
-            await addRecentFile(entry);
-            setRecentFiles(prev => {
-                const filtered = prev.filter(f => f.id !== entry.id);
-                return [entry, ...filtered].slice(0, 12);
-            });
-        } catch (e) {
-            console.error("Failed to read file", e);
-            alert("Error loading PDF");
-        }
+            const files = await getRecentFiles();
+            setRecentFiles(files);
+        } catch (_) { /* ignore */ }
     };
 
     const handleRemoveRecent = async (e: React.MouseEvent, id: string) => {
@@ -81,12 +58,12 @@ export function HomeScreen() {
 
     const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
     const onDragLeave = () => { setIsDragging(false); };
-    const onDrop = useCallback((e: React.DragEvent) => {
+    const onDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files[0];
         if (file) handleFileSelect(file);
-    }, []);
+    };
 
     return (
         <div className="flex-1 w-full h-full flex flex-col items-center bg-[var(--color-bg-app)] overflow-y-auto px-6 py-12">

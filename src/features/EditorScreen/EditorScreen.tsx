@@ -16,6 +16,9 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
     const pageRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const [pageInput, setPageInput] = useState('');
     const [zoomInput, setZoomInput] = useState(String(settings.zoom));
+    // Track whether the index change came from scrolling or from external (e.g. sidebar)
+    const closestIdx = useRef(0);
+    // const pendingScrollIdx = useRef<number | null>(null);
 
     const order = document.modifications.pageOrder;
     const totalPages = order.length;
@@ -23,26 +26,32 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
 
     useEffect(() => { setZoomInput(String(settings.zoom)); }, [settings.zoom]);
 
+    // When visiblePageIndex changes externally (sidebar click), scroll to that page
+    useEffect(() => {
+        if (visiblePageIndex === closestIdx.current) return;
+        scrollToPage(visiblePageIndex);
+    }, [visiblePageIndex, order]);
+
     const handleScroll = useCallback(() => {
         if (!scrollContainerRef.current) return;
         const container = scrollContainerRef.current;
         const containerCenter = container.scrollTop + container.clientHeight / 3;
-        let closestIdx = 0;
+        closestIdx.current = 0;
         let closestDist = Infinity;
         order.forEach((pageId, idx) => {
             const el = pageRefs.current[pageId];
             if (!el) return;
             const elCenter = el.offsetTop + el.offsetHeight / 2;
             const dist = Math.abs(containerCenter - elCenter);
-            if (dist < closestDist) { closestDist = dist; closestIdx = idx; }
+            if (dist < closestDist) { closestDist = dist; closestIdx.current = idx; }
         });
-        setVisiblePageIndex(closestIdx);
+        setVisiblePageIndex(closestIdx.current);
     }, [order, setVisiblePageIndex]);
 
     const scrollToPage = (idx: number) => {
         if (idx < 0 || idx >= totalPages) return;
         const el = pageRefs.current[order[idx]];
-        if (el && scrollContainerRef.current) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (el && scrollContainerRef.current) el.scrollIntoView({ behavior: 'instant', block: 'center' });
         setVisiblePageIndex(idx);
     };
 
@@ -59,18 +68,35 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
             const { PDFDocument } = await import('pdf-lib');
             const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false });
             const numPages = pdfDoc.getPageCount();
-            const existingMax = order.reduce((max, id) => { const num = parseInt(id.split('-')[1], 10); return num > max ? num : max; }, 0);
-            const newPageIds = Array.from({ length: numPages }, (_, i) => `merged-${existingMax + i + 1}`);
+
             const currentBytes = usePDFStore.getState().document.originalBytes;
             if (!currentBytes) return;
+
             const originalPdf = await PDFDocument.load(currentBytes);
+            const currentPageCount = originalPdf.getPageCount();
+
             const mergePdf = await PDFDocument.load(buffer);
             const copiedPages = await originalPdf.copyPages(mergePdf, mergePdf.getPageIndices());
             copiedPages.forEach((page) => originalPdf.addPage(page));
             const mergedBytes = await originalPdf.save();
+
+            // Create page IDs using the format "page-N" where N is 1-based index
+            // in the combined PDF. This way the export function can correctly find them.
+            const newPageIds = Array.from({ length: numPages }, (_, i) => `page-${currentPageCount + i + 1}`);
+
             usePDFStore.setState((state) => ({
-                document: { ...state.document, originalBytes: mergedBytes.buffer as ArrayBuffer, modifications: { ...state.document.modifications, pageOrder: [...order, ...newPageIds] } }
+                document: {
+                    ...state.document,
+                    originalBytes: mergedBytes.buffer as ArrayBuffer,
+                    modifications: {
+                        ...state.document.modifications,
+                        pageOrder: [...state.document.modifications.pageOrder, ...newPageIds]
+                    }
+                }
             }));
+
+            // Reset the file input so the same file can be merged again
+            if (mergeInputRef.current) mergeInputRef.current.value = '';
         } catch (e) { console.error("Merge failed:", e); alert("Failed to merge PDF"); }
     };
 
@@ -102,12 +128,22 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-xl shadow-[var(--shadow-floating)] px-4 py-2.5 flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                     <button className="btn-icon p-1.5" onClick={() => scrollToPage(visiblePageIndex - 1)} disabled={visiblePageIndex <= 0}><ChevronLeft size={18} /></button>
+                    <span className="text-sm font-medium text-[var(--color-text-main)] tabular-nums">
+                        <input type="text" className="w-12 text-center text-sm px-1 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)]"
+                            placeholder={String(visiblePageIndex + 1)} value={pageInput} onChange={(e) => setPageInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handlePageInputSubmit(); }} onBlur={handlePageInputSubmit} title="Jump to page" />
+                        &nbsp;/&nbsp;{totalPages}
+                    </span>
+                    <button className="btn-icon p-1.5" onClick={() => scrollToPage(visiblePageIndex + 1)} disabled={visiblePageIndex >= totalPages - 1}><ChevronRight size={18} /></button>
+                </div>
+                {/* <div className="flex items-center gap-1.5">
+                    <button className="btn-icon p-1.5" onClick={() => scrollToPage(visiblePageIndex - 1)} disabled={visiblePageIndex <= 0}><ChevronLeft size={18} /></button>
                     <span className="text-sm font-medium text-[var(--color-text-main)] tabular-nums">Page {visiblePageIndex + 1} / {totalPages}</span>
                     <button className="btn-icon p-1.5" onClick={() => scrollToPage(visiblePageIndex + 1)} disabled={visiblePageIndex >= totalPages - 1}><ChevronRight size={18} /></button>
                     <input type="text" className="w-12 text-center text-sm px-1 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)]"
                         placeholder="#" value={pageInput} onChange={(e) => setPageInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handlePageInputSubmit(); }} onBlur={handlePageInputSubmit} title="Jump to page" />
-                </div>
+                </div> */}
                 <div className="w-px h-6 bg-[var(--color-border)]"></div>
                 <div className="flex items-center gap-1">
                     <button className="btn-icon p-1.5" onClick={handleRotate} title="Rotate 90°"><RotateCw size={16} /></button>
