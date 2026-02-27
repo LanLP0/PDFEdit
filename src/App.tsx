@@ -5,7 +5,8 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { HomeScreen } from './features/HomeScreen/HomeScreen';
 import { EditorScreen } from './features/EditorScreen/EditorScreen';
 import { usePDFStore } from './store/usePDFStore';
-import { openFile } from './lib/openFile';
+import { openFile, openFilePath } from './lib/openFile';
+import { isElectron, getElectronAPI } from './lib/electron';
 
 function App() {
   const { document, settings, undo, redo } = usePDFStore();
@@ -58,6 +59,15 @@ function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo]);
+
+  // Electron: listen for files opened via File menu or macOS Dock
+  useEffect(() => {
+    if (!isElectron) return;
+    const cleanup = getElectronAPI().onOpenFile((filePath) => {
+      openFilePath(filePath);
+    });
+    return cleanup;
+  }, []);
 
   // App-level file drop handler
   const handleDragOver = useCallback((e: React.DragEvent) => {

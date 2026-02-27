@@ -1,11 +1,20 @@
 {
   "name": "pdfedit",
+  "author": "LanLP",
+  "description": "A PDF Editor with all features that one needs, all integrated into a single modern interface",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
+    "dev:electron": "cross-env ELECTRON=1 vite",
     "build": "tsc -b && vite build",
+    "build:electron": "cross-env ELECTRON=1 tsc -b && cross-env ELECTRON=1 vite build",
+    "build:win": "npm run build:electron && electron-builder --win",
+    "build:mac": "npm run build:electron && electron-builder --mac",
+    "build:linux": "npm run build:electron && electron-builder --linux",
+    "build:all": "npm run build:electron && electron-builder --win --mac --linux",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -30,6 +39,10 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.27",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^35.1.1",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -38,6 +51,8 @@
     "tailwindcss": "^4.2.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6"
   }
 }
