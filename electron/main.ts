@@ -55,6 +55,7 @@ function createWindow() {
         mainWindow = null;
     });
 
+    mainWindow.removeMenu();
     // buildMenu();
 }
 
