@@ -20,7 +20,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, RotateCw, Trash2 } from 'lucide-react';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+).toString();
 
 interface ThumbnailSidebarProps {
     activePageIndex: number;

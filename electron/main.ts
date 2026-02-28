@@ -2,15 +2,15 @@ import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import iconUrl from '../src/assets/icon.png?url';
+import started from 'electron-squirrel-startup';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Handle creating/removing shortcuts on Windows when installing/uninstalling.
+if (started) {
+    app.quit();
+}
 
-// app.isPackaged is false during development, true when built by electron-builder.
-// This is the only reliable way to detect production — process.env.NODE_ENV is
-// often undefined in packaged Electron apps.
-const isDev = !app.isPackaged;
+const isDev = !app.isPackaged || process.env.IS_DEV === 'true';
 
 // Keep a global reference to avoid GC
 let mainWindow: BrowserWindow | null = null;
@@ -31,14 +31,20 @@ function createWindow() {
             sandbox: false,
         },
         titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+        icon: iconUrl,
         show: false,
     });
 
     if (isDev) {
-        mainWindow.loadURL('http://localhost:5173');
         mainWindow.webContents.openDevTools({ mode: 'detach' });
+    }
+
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+        mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
-        mainWindow.loadFile(join(__dirname, '../dist/index.html'));
+        mainWindow.loadFile(
+            path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+        );
     }
 
     mainWindow.once('ready-to-show', () => {
@@ -169,4 +175,12 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('activate', () => {
+    // On OS X it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+    }
 });

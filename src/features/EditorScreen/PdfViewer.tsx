@@ -3,7 +3,10 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { usePDFStore } from '../../store/usePDFStore';
 import { AnnotationOverlay } from '../Annotations/AnnotationOverlay';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+).toString();
 
 interface PdfViewerProps {
     pageId: string;

@@ -20,6 +20,7 @@ export function hasModifications(): boolean {
  * Load a PDF from an ArrayBuffer. Internal helper shared by openFile and openFilePath.
  */
 async function loadPdfBuffer(name: string, size: number, buffer: ArrayBuffer): Promise<void> {
+    console.log('Loading PDF:', name);
     const { PDFDocument } = await import('pdf-lib');
     const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false });
     const numPages = pdfDoc.getPageCount();
