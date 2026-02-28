@@ -60,6 +60,31 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo]);
 
+  // Handle prevent touchmove on mobile when annoting
+  const [touchMoveHandlerAdded, setTouchMoveHandlerAdded] = useState(false);
+  let tool = settings.activeTool;
+
+  const preventTouchMove = useCallback((e: TouchEvent): void => {
+    if (e.preventDefault) e.preventDefault();
+  }, []);
+
+  useEffect(() => {
+    if (tool === 'pointer' || tool === 'text' || tool === 'link' || tool === 'signature') {
+      if (!touchMoveHandlerAdded) return;
+
+      console.log('Removing touchmove block handler');
+      window.document.removeEventListener('touchmove', preventTouchMove);
+      setTouchMoveHandlerAdded(false);
+      return;
+    }
+
+    if (touchMoveHandlerAdded) return;
+
+    console.log('Adding touchmove block handler');
+    window.document.addEventListener('touchmove', preventTouchMove, { passive: false });
+    setTouchMoveHandlerAdded(true);
+  }, [tool])
+
   // Electron: listen for files opened via File menu or macOS Dock
   useEffect(() => {
     if (!isElectron) return;
