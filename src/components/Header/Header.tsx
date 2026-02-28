@@ -1,4 +1,4 @@
-import { Download, Moon, Sun, Monitor, Undo2, Redo2, PanelLeft, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Download, Moon, Sun, Monitor, Undo2, Redo2, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { usePDFStore } from '../../store/usePDFStore';
 import { PdfEngine } from '../../lib/pdf/PdfEngine';
 import { useState, useRef, useEffect } from 'react';
