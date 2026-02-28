@@ -75,7 +75,7 @@ export function Header() {
     const ThemeIcon = settings.theme === 'light' ? Sun : settings.theme === 'dark' ? Moon : Monitor;
 
     return (
-        <header className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg-panel)] shadow-sm z-50 relative">
+        <header className="flex items-center justify-between px-6 py-3 border-b border-(--color-border) bg-(--color-bg-panel) shadow-sm z-50 relative">
             <div className="flex items-center gap-4">
                 <button
                     className="font-bold text-xl tracking-tight text-primary hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-none outline-none"
@@ -87,21 +87,21 @@ export function Header() {
                 {document.originalBytes && (
                     <div className="flex items-center gap-2">
                         {isEditingName ? (
-                            <div className="flex items-center bg-[var(--color-bg-app)] rounded-md border border-[var(--color-primary)] shadow-sm overflow-hidden">
+                            <div className="flex items-center bg-(--color-bg-app) rounded-md border border-primary shadow-sm overflow-hidden">
                                 <input
                                     ref={nameInputRef}
                                     type="text"
-                                    className="text-sm px-3 py-1 bg-transparent outline-none text-[var(--color-text-main)] font-medium min-w-[120px]"
+                                    className="text-sm px-3 py-1 bg-transparent outline-none text-(--color-text-main) font-medium min-w-[120px]"
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
                                     onBlur={finishEditing}
                                     onKeyDown={(e) => { if (e.key === 'Enter') finishEditing(); if (e.key === 'Escape') setIsEditingName(false); }}
                                 />
-                                <span className="text-sm text-[var(--color-text-muted)] pr-3 select-none">{document.fileExtension}</span>
+                                <span className="text-sm text-(--color-text-muted) pr-3 select-none">{document.fileExtension}</span>
                             </div>
                         ) : (
                             <button
-                                className="text-sm px-3 py-1 bg-[var(--color-bg-app)] rounded-md border border-[var(--color-border)] font-medium text-[var(--color-text-main)] shadow-sm hover:border-[var(--color-primary)] transition-colors cursor-text"
+                                className="text-sm px-3 py-1 bg-(--color-bg-app) rounded-md border border-(--color-border) font-medium text-(--color-text-main) shadow-sm hover:border-primary transition-colors cursor-text"
                                 onClick={startEditing}
                                 title="Click to rename"
                             >

@@ -112,9 +112,9 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
     };
 
     return (
-        <div className="flex-1 w-full h-full bg-[var(--color-canvas)] flex flex-col overflow-hidden relative">
+        <div className="flex-1 w-full h-full bg-(--color-canvas) flex flex-col overflow-hidden relative">
             {/* Vertically scrolling PDF Canvas */}
-            <div ref={scrollContainerRef} className="flex-1 overflow-auto bg-[var(--color-canvas)]" onScroll={handleScroll}>
+            <div ref={scrollContainerRef} className="flex-1 overflow-auto bg-(--color-canvas)" onScroll={handleScroll}>
                 <div className="flex flex-col items-center gap-6 py-10 px-4">
                     {order.map((pageId) => (
                         <div key={pageId} ref={(el) => { pageRefs.current[pageId] = el; }}>
@@ -125,11 +125,11 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
             </div>
 
             {/* Floating Bottom Card */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[var(--color-bg-panel)] border border-[var(--color-border)] rounded-xl shadow-[var(--shadow-floating)] px-4 py-2.5 flex items-center gap-4">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-(--color-bg-panel) border border-(--color-border) rounded-xl shadow-(--shadow-floating) px-4 py-2.5 flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                     <button className="btn-icon p-1.5" onClick={() => scrollToPage(visiblePageIndex - 1)} disabled={visiblePageIndex <= 0}><ChevronLeft size={18} /></button>
-                    <span className="text-sm font-medium text-[var(--color-text-main)] tabular-nums">
-                        <input type="text" className="w-12 text-center text-sm px-1 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)]"
+                    <span className="text-sm font-medium text-(--color-text-main) tabular-nums">
+                        <input type="text" className="w-12 text-center text-sm px-1 py-1 rounded-md border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) outline-none focus:border-primary"
                             placeholder={String(visiblePageIndex + 1)} value={pageInput} onChange={(e) => setPageInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handlePageInputSubmit(); }} onBlur={handlePageInputSubmit} title="Jump to page" />
                         &nbsp;/&nbsp;{totalPages}
@@ -140,24 +140,24 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
                     <button className="btn-icon p-1.5" onClick={() => scrollToPage(visiblePageIndex - 1)} disabled={visiblePageIndex <= 0}><ChevronLeft size={18} /></button>
                     <span className="text-sm font-medium text-[var(--color-text-main)] tabular-nums">Page {visiblePageIndex + 1} / {totalPages}</span>
                     <button className="btn-icon p-1.5" onClick={() => scrollToPage(visiblePageIndex + 1)} disabled={visiblePageIndex >= totalPages - 1}><ChevronRight size={18} /></button>
-                    <input type="text" className="w-12 text-center text-sm px-1 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)]"
+                    <input type="text" className="w-12 text-center text-sm px-1 py-1 rounded-md border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) outline-none focus:border-primary"
                         placeholder="#" value={pageInput} onChange={(e) => setPageInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handlePageInputSubmit(); }} onBlur={handlePageInputSubmit} title="Jump to page" />
                 </div> */}
-                <div className="w-px h-6 bg-[var(--color-border)]"></div>
+                <div className="w-px h-6 bg-(--color-border)"></div>
                 <div className="flex items-center gap-1">
                     <button className="btn-icon p-1.5" onClick={handleRotate} title="Rotate 90°"><RotateCw size={16} /></button>
                     <button className="btn-icon p-1.5" onClick={handleDeletePage} title="Delete page" disabled={totalPages <= 1}><Trash2 size={16} /></button>
                     <button className="btn-icon p-1.5" onClick={() => mergeInputRef.current?.click()} title="Merge PDF"><FilePlus size={16} /></button>
                     <input type="file" accept="application/pdf" className="hidden" ref={mergeInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMergeFile(f); }} />
                 </div>
-                <div className="w-px h-6 bg-[var(--color-border)]"></div>
+                <div className="w-px h-6 bg-(--color-border)"></div>
                 <div className="flex items-center gap-1.5">
                     <button className="btn-icon p-1.5" onClick={() => setZoom(settings.zoom - 10)} title="Zoom Out"><ZoomOut size={16} /></button>
-                    <input type="text" className="w-14 text-center text-sm px-1 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] outline-none focus:border-[var(--color-primary)] tabular-nums"
+                    <input type="text" className="w-14 text-center text-sm px-1 py-1 rounded-md border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) outline-none focus:border-primary tabular-nums"
                         value={zoomInput} onChange={(e) => setZoomInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleZoomInputSubmit(); }} onBlur={handleZoomInputSubmit} title="Zoom %" />
-                    <span className="text-xs text-[var(--color-text-muted)]">%</span>
+                    <span className="text-xs text-(--color-text-muted)">%</span>
                     <button className="btn-icon p-1.5" onClick={() => setZoom(settings.zoom + 10)} title="Zoom In"><ZoomIn size={16} /></button>
                 </div>
             </div>

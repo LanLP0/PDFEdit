@@ -106,18 +106,18 @@ export function SignatureModal({ pageId }: SignatureModalProps) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-[var(--color-bg-panel)] rounded-xl shadow-[var(--shadow-floating)] max-w-xl w-full p-6 mx-4 relative">
+            <div className="bg-(--color-bg-panel) rounded-xl shadow-(--shadow-floating) max-w-xl w-full p-6 mx-4 relative">
                 <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
+                    className="absolute top-4 right-4 text-(--color-text-muted) hover:text-(--color-text-main)"
                 >
                     <X size={24} />
                 </button>
 
-                <h2 className="text-xl font-semibold text-[var(--color-text-main)] mb-2">Draw Your Signature</h2>
-                <p className="text-sm text-[var(--color-text-muted)] mb-6">Use your mouse or finger to sign.</p>
+                <h2 className="text-xl font-semibold text-(--color-text-main) mb-2">Draw Your Signature</h2>
+                <p className="text-sm text-(--color-text-muted) mb-6">Use your mouse or finger to sign.</p>
 
-                <div className="border-2 border-dashed border-[var(--color-border-hover)] rounded-lg bg-white overflow-hidden mb-6">
+                <div className="border-2 border-dashed border-(--color-border-hover) rounded-lg bg-white overflow-hidden mb-6">
                     <canvas
                         ref={canvasRef}
                         width={500}
@@ -135,7 +135,7 @@ export function SignatureModal({ pageId }: SignatureModalProps) {
 
                 <div className="flex justify-between items-center">
                     <button
-                        className="text-[var(--color-text-muted)] hover:text-red-500 font-medium transition-colors"
+                        className="text-(--color-text-muted) hover:text-red-500 font-medium transition-colors"
                         onClick={handleClear}
                     >
                         Clear Signature

@@ -238,14 +238,14 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
             {/* Link Dialog */}
             {showLinkDialog && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowLinkDialog(false)}>
-                    <div className="bg-[var(--color-bg-panel)] rounded-xl shadow-xl border border-[var(--color-border)] p-5 w-80 space-y-3" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-sm font-semibold text-[var(--color-text-main)]">Add URL Link</h3>
+                    <div className="bg-(--color-bg-panel) rounded-xl shadow-xl border border-(--color-border) p-5 w-80 space-y-3" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-sm font-semibold text-(--color-text-main)">Add URL Link</h3>
                         <div>
-                            <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">Display Text</label>
+                            <label className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">Display Text</label>
                             <input
                                 type="text"
                                 autoFocus
-                                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] text-sm outline-none focus:border-[var(--color-primary)]"
+                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) text-sm outline-none focus:border-primary"
                                 placeholder="Click here"
                                 value={linkText}
                                 onChange={(e) => setLinkText(e.target.value)}
@@ -253,10 +253,10 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
                             />
                         </div>
                         <div>
-                            <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1">URL</label>
+                            <label className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">URL</label>
                             <input
                                 type="url"
-                                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-app)] text-[var(--color-text-main)] text-sm outline-none focus:border-[var(--color-primary)]"
+                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) text-sm outline-none focus:border-primary"
                                 placeholder="https://example.com"
                                 value={linkUrl}
                                 onChange={(e) => setLinkUrl(e.target.value)}
@@ -264,8 +264,8 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
                             />
                         </div>
                         <div className="flex justify-end gap-2 pt-1">
-                            <button className="px-3 py-1.5 text-sm rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]" onClick={() => setShowLinkDialog(false)}>Cancel</button>
-                            <button className="px-3 py-1.5 text-sm rounded-lg bg-[var(--color-primary)] text-white font-medium hover:opacity-90 disabled:opacity-50"
+                            <button className="px-3 py-1.5 text-sm rounded-lg border border-(--color-border) text-(--color-text-muted) hover:bg-(--color-bg-hover)" onClick={() => setShowLinkDialog(false)}>Cancel</button>
+                            <button className="px-3 py-1.5 text-sm rounded-lg bg-primary text-white font-medium hover:opacity-90 disabled:opacity-50"
                                 onClick={handleInsertLink} disabled={!linkText.trim() || !linkUrl.trim()}>Insert</button>
                         </div>
                     </div>
@@ -344,7 +344,7 @@ function StrokeAnnotation({ pageId, annotation, containerRef, isSelected }: {
 
     return (
         <div
-            className={`absolute cursor-move ${isSelected ? 'ring-2 ring-[var(--color-primary)] ring-offset-1 rounded' : ''}`}
+            className={`absolute cursor-move ${isSelected ? 'ring-2 ring-primary ring-offset-1 rounded' : ''}`}
             style={{
                 left: `${bbox.x}%`,
                 top: `${bbox.y}%`,
@@ -369,7 +369,7 @@ function StrokeAnnotation({ pageId, annotation, containerRef, isSelected }: {
             {isSelected && (
                 <div className="absolute -top-5 -right-5 z-30">
                     <button
-                        className="w-8 h-8 rounded-lg bg-[var(--color-bg-panel)] border border-[var(--color-border)] shadow-md flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                        className="w-8 h-8 rounded-lg bg-(--color-bg-panel) border border-(--color-border) shadow-(--shadow-floating) flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                         onClick={handleDelete}
                         title="Delete annotation"
                     >
@@ -446,7 +446,7 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
 
     return (
         <div
-            className={`absolute outline-none rounded-sm cursor-move ${isDragging ? 'opacity-80' : ''} ${isSelected ? 'ring-2 ring-[var(--color-primary)] ring-offset-1' : ''}`}
+            className={`absolute outline-none rounded-sm cursor-move ${isDragging ? 'opacity-80' : ''} ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
             style={{
                 left: `${annotation.x}%`,
                 top: `${annotation.y}%`,
@@ -462,7 +462,7 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
             {isSelected && (
                 <div className="absolute -top-5 -right-5 z-30">
                     <button
-                        className="w-8 h-8 rounded-lg bg-[var(--color-bg-panel)] border border-[var(--color-border)] shadow-md flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                        className="w-8 h-8 rounded-lg bg-(--color-bg-panel) border border-(--color-border) shadow-(--shadow-floating) flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                         onClick={handleDelete}
                         title="Delete annotation"
                     >
@@ -475,7 +475,7 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
                 isEditing ? (
                     <input
                         autoFocus
-                        className="bg-transparent border-b border-[var(--color-primary)] outline-none w-min min-w-[100px]"
+                        className="bg-transparent border-b border-primary outline-none w-min min-w-[100px]"
                         style={textCss}
                         value={annotation.payload}
                         onChange={(e) => updateAnnotation(pageId, annotation.id, { payload: e.target.value })}
@@ -497,7 +497,7 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
 
             {(annotation.type === 'image' || annotation.type === 'signature') && (
                 <img src={annotation.payload} alt="Annotation"
-                    className="w-full h-auto rounded-md shadow-sm border border-[var(--color-border-hover)] select-none pointer-events-none bg-white"
+                    className="w-full h-auto rounded-md shadow-sm border border-(--color-border-hover) select-none pointer-events-none bg-white"
                     draggable={false} />
             )}
         </div>

@@ -102,24 +102,24 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
     };
 
     return (
-        <div className="w-52 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-bg-panel)] flex flex-col overflow-hidden">
+        <div className="w-52 shrink-0 border-r border-(--color-border) bg-(--color-bg-panel) flex flex-col overflow-hidden">
             {/* Tab Headers */}
             <div className="flex items-center justify-center gap-2 px-3 py-3 shrink-0">
                 <button
-                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all border ${sidebarMode === 'tools' ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-bg-active)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'}`}
+                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all border ${sidebarMode === 'tools' ? 'border-primary text-primary bg-(--color-bg-active)' : 'border-(--color-border) text-(--color-text-muted) hover:bg-(--color-bg-hover)'}`}
                     onClick={() => setSidebarMode('tools')}
                 >
                     <Layers size={15} /> Tools
                 </button>
                 <button
-                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all border ${sidebarMode === 'thumbnails' ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-bg-active)]' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'}`}
+                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all border ${sidebarMode === 'thumbnails' ? 'border-primary text-primary bg-(--color-bg-active)' : 'border-(--color-border) text-(--color-text-muted) hover:bg-(--color-bg-hover)'}`}
                     onClick={() => setSidebarMode('thumbnails')}
                 >
                     <Grid2X2 size={15} /> Pages
                 </button>
             </div>
 
-            <div className="mx-3 h-px bg-[var(--color-border)]"></div>
+            <div className="mx-3 h-px bg-(--color-border)"></div>
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
@@ -128,8 +128,8 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                         {/* Per-tool Color Picker */}
                         {showColorPicker && (
                             <div className="mx-3">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">Color</span>
-                                <label className="flex items-center w-full h-9 rounded-lg border border-[var(--color-border)] cursor-pointer overflow-hidden transition-all hover:border-[var(--color-primary)] relative">
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1.5">Color</span>
+                                <label className="flex items-center w-full h-9 rounded-lg border border-(--color-border) cursor-pointer overflow-hidden transition-all hover:border-primary relative">
                                     <div className="w-full h-full rounded-lg" style={{ backgroundColor: getActiveToolColor() }}></div>
                                     <input
                                         type="color"
@@ -144,30 +144,30 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                         {/* Text Options */}
                         {showTextOptions && (
                             <div className="mx-3">
-                                <div className="bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded-xl p-3 space-y-2.5">
-                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">{isEditingTextAnn ? 'Edit Text' : 'Text Style'}</span>
-                                    <select className="w-full px-2 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-panel)] text-[var(--color-text-main)] text-xs outline-none focus:border-[var(--color-primary)]"
+                                <div className="bg-(--color-bg-app) border border-(--color-border) rounded-xl p-3 space-y-2.5">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted)">{isEditingTextAnn ? 'Edit Text' : 'Text Style'}</span>
+                                    <select className="w-full px-2 py-1.5 rounded-lg border border-(--color-border) bg-(--color-bg-panel) text-(--color-text-main) text-xs outline-none focus:border-primary"
                                         value={activeStyle.fontFamily} onChange={(e) => handleStyleChange({ fontFamily: e.target.value })}>
                                         {availableFonts.map(f => <option key={f.name} value={f.name} style={{ fontFamily: f.webFamily }}>{f.name}</option>)}
                                     </select>
-                                    <select className="w-full px-2 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-panel)] text-[var(--color-text-main)] text-xs outline-none focus:border-[var(--color-primary)]"
+                                    <select className="w-full px-2 py-1.5 rounded-lg border border-(--color-border) bg-(--color-bg-panel) text-(--color-text-main) text-xs outline-none focus:border-primary"
                                         value={activeStyle.fontSize} onChange={(e) => handleStyleChange({ fontSize: Number(e.target.value) })}>
                                         {fontSizeOptions.map(s => <option key={s} value={s}>{s}px</option>)}
                                     </select>
                                     <div className="flex gap-1">
                                         <button
-                                            className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${!currentFontDef.supportsBold ? 'opacity-30 cursor-not-allowed' : activeStyle.bold ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border border-[var(--color-border)]'}`}
+                                            className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${!currentFontDef.supportsBold ? 'opacity-30 cursor-not-allowed' : activeStyle.bold ? 'bg-primary text-white' : 'bg-(--color-bg-panel) text-(--color-text-muted) border border-(--color-border)'}`}
                                             onClick={() => { if (currentFontDef.supportsBold) handleStyleChange({ bold: !activeStyle.bold }); }}
                                             disabled={!currentFontDef.supportsBold}
                                             title={currentFontDef.supportsBold ? 'Bold' : 'Not supported for this font'}
                                         ><Bold size={14} /></button>
                                         <button
-                                            className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${!currentFontDef.supportsItalic ? 'opacity-30 cursor-not-allowed' : activeStyle.italic ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border border-[var(--color-border)]'}`}
+                                            className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${!currentFontDef.supportsItalic ? 'opacity-30 cursor-not-allowed' : activeStyle.italic ? 'bg-primary text-white' : 'bg-(--color-bg-panel) text-(--color-text-muted) border border-(--color-border)'}`}
                                             onClick={() => { if (currentFontDef.supportsItalic) handleStyleChange({ italic: !activeStyle.italic }); }}
                                             disabled={!currentFontDef.supportsItalic}
                                             title={currentFontDef.supportsItalic ? 'Italic' : 'Not supported for this font'}
                                         ><Italic size={14} /></button>
-                                        <button className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${activeStyle.underline ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-bg-panel)] text-[var(--color-text-muted)] border border-[var(--color-border)]'}`}
+                                        <button className={`flex-1 p-1.5 rounded-lg transition-all flex items-center justify-center ${activeStyle.underline ? 'bg-primary text-white' : 'bg-(--color-bg-panel) text-(--color-text-muted) border border-(--color-border)'}`}
                                             onClick={() => handleStyleChange({ underline: !activeStyle.underline })}><Underline size={14} /></button>
                                     </div>
                                 </div>
@@ -177,13 +177,13 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                         {/* Highlight Options */}
                         {showHighlightOptions && (
                             <div className="mx-3">
-                                <div className="bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded-xl p-3 space-y-2.5">
-                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Highlight</span>
+                                <div className="bg-(--color-bg-app) border border-(--color-border) rounded-xl p-3 space-y-2.5">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted)">Highlight</span>
                                     <div>
-                                        <span className="text-[10px] text-[var(--color-text-muted)] block mb-1">Size: {brushSettings.highlightSize}px</span>
+                                        <span className="text-[10px] text-(--color-text-muted) block mb-1">Size: {brushSettings.highlightSize}px</span>
                                         <input type="range" min="8" max="100" value={brushSettings.highlightSize}
                                             onChange={(e) => setBrushSettings({ highlightSize: Number(e.target.value) })}
-                                            className="w-full h-1.5 rounded-full appearance-none bg-[var(--color-border)] accent-[var(--color-primary)]" />
+                                            className="w-full h-1.5 rounded-full appearance-none bg-(--color-border) accent-primary" />
                                     </div>
                                 </div>
                             </div>
@@ -192,13 +192,13 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                         {/* Draw Options */}
                         {showDrawOptions && (
                             <div className="mx-3">
-                                <div className="bg-[var(--color-bg-app)] border border-[var(--color-border)] rounded-xl p-3 space-y-2.5">
-                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Draw</span>
+                                <div className="bg-(--color-bg-app) border border-(--color-border) rounded-xl p-3 space-y-2.5">
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted)">Draw</span>
                                     <div>
-                                        <span className="text-[10px] text-[var(--color-text-muted)] block mb-1">Size: {brushSettings.drawSize}px</span>
+                                        <span className="text-[10px] text-(--color-text-muted) block mb-1">Size: {brushSettings.drawSize}px</span>
                                         <input type="range" min="1" max="50" value={brushSettings.drawSize}
                                             onChange={(e) => setBrushSettings({ drawSize: Number(e.target.value) })}
-                                            className="w-full h-1.5 rounded-full appearance-none bg-[var(--color-border)] accent-[var(--color-primary)]" />
+                                            className="w-full h-1.5 rounded-full appearance-none bg-(--color-border) accent-primary" />
                                     </div>
                                 </div>
                             </div>
@@ -211,7 +211,7 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                                 const isActive = activeTool === t.id;
                                 return (
                                     <button key={t.id}
-                                        className={`py-2.5 px-3 w-full rounded-lg flex items-center gap-3 text-sm font-medium transition-all border ${isActive ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-bg-active)] shadow-sm' : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-main)]'}`}
+                                        className={`py-2.5 px-3 w-full rounded-lg flex items-center gap-3 text-sm font-medium transition-all border ${isActive ? 'border-primary text-primary bg-(--color-bg-active) shadow-sm' : 'border-(--color-border) text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-main)'}`}
                                         onClick={() => { setActiveTool(t.id); if (t.id !== 'text') selectAnnotation(null, null); }}
                                     >
                                         <Icon size={18} />
@@ -225,7 +225,7 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
 
                 {sidebarMode === 'thumbnails' && (
                     <div className="p-2 space-y-2">
-                        <div className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                        <div className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted)">
                             {order.length} Pages — Drag to reorder
                         </div>
                         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -257,10 +257,10 @@ function SortableThumbnail({ pageId, index, isActive, fileUrl, rotation, onSelec
 
     return (
         <div ref={setNodeRef} style={style}
-            className={`group rounded-lg border transition-all cursor-pointer mb-2 ${isActive ? 'border-[var(--color-primary)] shadow-md bg-[var(--color-bg-hover)]' : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'}`}
+            className={`group rounded-lg border transition-all cursor-pointer mb-2 ${isActive ? 'border-primary shadow-md bg-(--color-bg-hover)' : 'border-(--color-border) hover:border-(--color-border-hover)'}`}
             onClick={onSelect}>
             <div className="flex items-center gap-1.5 p-1.5">
-                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">
+                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-0.5 text-(--color-text-muted) hover:text-(--color-text-main)">
                     <GripVertical size={12} />
                 </div>
                 <div className="flex-1 overflow-hidden rounded bg-white">
@@ -272,11 +272,11 @@ function SortableThumbnail({ pageId, index, isActive, fileUrl, rotation, onSelec
                 </div>
             </div>
             <div className="flex items-center justify-between px-2 pb-1.5">
-                <span className="text-[10px] font-medium text-[var(--color-text-muted)]">Page {index + 1}</span>
+                <span className="text-[10px] font-medium text-(--color-text-muted)">Page {index + 1}</span>
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)]"
+                    <button className="p-0.5 rounded text-(--color-text-muted) hover:text-(--color-text-main) hover:bg-(--color-bg-hover)"
                         onClick={(e) => { e.stopPropagation(); onRotate(); }} title="Rotate"><RotateCw size={11} /></button>
-                    <button className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-50"
+                    <button className="p-0.5 rounded text-(--color-text-muted) hover:text-red-500 hover:bg-red-50"
                         onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete"><Trash2 size={11} /></button>
                 </div>
             </div>

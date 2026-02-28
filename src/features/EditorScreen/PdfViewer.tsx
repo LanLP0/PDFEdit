@@ -39,7 +39,7 @@ export function PdfViewer({ pageId, zoom }: PdfViewerProps) {
             <Document
                 file={fileUrl}
                 loading={
-                    <div style={{ width: pageWidth, height: pageWidth * 1.3 }} className="flex items-center justify-center text-[var(--color-text-muted)] bg-white">
+                    <div style={{ width: pageWidth, height: pageWidth * 1.3 }} className="flex items-center justify-center text-(--color-text-muted) bg-white">
                         Loading...
                     </div>
                 }

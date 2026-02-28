@@ -58,8 +58,8 @@ export function ThumbnailSidebar({ activePageIndex, onPageSelect }: ThumbnailSid
     };
 
     return (
-        <div className="w-56 border-r border-[var(--color-border)] bg-[var(--color-bg-panel)] flex flex-col h-full overflow-hidden shrink-0">
-            <div className="p-3 border-b border-[var(--color-border)] text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+        <div className="w-56 border-r border-(--color-border) bg-(--color-bg-panel) flex flex-col h-full overflow-hidden shrink-0">
+            <div className="p-3 border-b border-(--color-border) text-xs font-semibold uppercase tracking-wider text-(--color-text-muted)">
                 Pages ({order.length})
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
@@ -122,12 +122,12 @@ function SortableThumbnail({ pageId, index, isActive, fileUrl, rotation, onSelec
         <div
             ref={setNodeRef}
             style={style}
-            className={`group rounded-lg border transition-all cursor-pointer ${isActive ? 'border-[var(--color-primary)] shadow-md bg-[var(--color-bg-hover)]' : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'}`}
+            className={`group rounded-lg border transition-all cursor-pointer ${isActive ? 'border-primary shadow-md bg-(--color-bg-hover)' : 'border-(--color-border) hover:border-(--color-border-hover)'}`}
             onClick={onSelect}
         >
             <div className="flex items-center gap-2 p-1.5">
                 {/* Drag handle */}
-                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]">
+                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-(--color-text-muted) hover:text-(--color-text-main)">
                     <GripVertical size={14} />
                 </div>
 
@@ -149,19 +149,19 @@ function SortableThumbnail({ pageId, index, isActive, fileUrl, rotation, onSelec
 
             {/* Bottom bar with page number and actions */}
             <div className="flex items-center justify-between px-2 pb-1.5">
-                <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                <span className="text-xs font-medium text-(--color-text-muted)">
                     Page {index + 1}
                 </span>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                        className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] hover:bg-[var(--color-bg-hover)]"
+                        className="p-1 rounded text-(--color-text-muted) hover:text-(--color-text-main) hover:bg-(--color-bg-hover)"
                         onClick={(e) => { e.stopPropagation(); onRotate(); }}
                         title="Rotate"
                     >
                         <RotateCw size={12} />
                     </button>
                     <button
-                        className="p-1 rounded text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-50"
+                        className="p-1 rounded text-(--color-text-muted) hover:text-red-500 hover:bg-red-50"
                         onClick={(e) => { e.stopPropagation(); onDelete(); }}
                         title="Delete"
                     >
