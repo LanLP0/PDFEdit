@@ -4,6 +4,7 @@
   "description": "A PDF Editor with all features that one needs, all integrated into a single modern interface",
   "private": true,
   "version": "0.0.0",
+  "license": "GPL-3.0-only",
   "main": ".vite/build/main.js",
   "scripts": {
     "dev": "vite",
