@@ -97,6 +97,7 @@ export interface AppSettings {
   currentTextStyle: TextStyle;
   brushSettings: BrushSettings;
   zoom: number;
+  sidebarCollapse: boolean;
   selectedAnnotationId: string | null;
   selectedAnnotationPageId: string | null;
 }
@@ -121,6 +122,7 @@ interface PDFStore {
   setCurrentTextStyle: (style: Partial<TextStyle>) => void;
   setBrushSettings: (settings: Partial<BrushSettings>) => void;
   setZoom: (zoom: number) => void;
+  setSidebarCollapse: (sidebarCollapse: boolean) => void;
   selectAnnotation: (pageId: string | null, annId: string | null) => void;
 
   loadDocument: (file: File, bytes: ArrayBuffer, initialPages: string[]) => void;
@@ -128,6 +130,7 @@ interface PDFStore {
   updatePageOrder: (newOrder: string[]) => void;
   rotatePage: (pageId: string, degree: number) => void;
   deletePage: (pageId: string) => void;
+  mergeFile: (file: File) => Promise<void>;
 
   addAnnotation: (pageId: string, annotation: Annotation) => void;
   updateAnnotation: (pageId: string, annotationId: string, updates: Partial<Annotation>) => void;
@@ -155,6 +158,7 @@ const initialSettings: AppSettings = {
   currentTextStyle: { ...defaultTextStyle },
   brushSettings: { ...defaultBrushSettings },
   zoom: 100,
+  sidebarCollapse: false,
   selectedAnnotationId: null,
   selectedAnnotationPageId: null,
 };
@@ -219,6 +223,7 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
     settings: { ...state.settings, brushSettings: { ...state.settings.brushSettings, ...bs } }
   })),
   setZoom: (zoom) => set((state) => ({ settings: { ...state.settings, zoom: Math.max(25, Math.min(400, zoom)) } })),
+  setSidebarCollapse: (sidebarCollapse) => set((state) => ({ settings: { ...state.settings, sidebarCollapse } })),
   selectAnnotation: (pageId, annId) => set((state) => ({
     settings: { ...state.settings, selectedAnnotationId: annId, selectedAnnotationPageId: pageId }
   })),
@@ -280,6 +285,41 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
       canUndo: true,
       canRedo: false,
     });
+  },
+
+  mergeFile: async (file) => {
+    try {
+      const buffer = await file.arrayBuffer();
+      const { PDFDocument } = await import('pdf-lib');
+      const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false });
+      const numPages = pdfDoc.getPageCount();
+
+      const currentBytes = usePDFStore.getState().document.originalBytes;
+      if (!currentBytes) return;
+
+      const originalPdf = await PDFDocument.load(currentBytes);
+      const currentPageCount = originalPdf.getPageCount();
+
+      const mergePdf = await PDFDocument.load(buffer);
+      const copiedPages = await originalPdf.copyPages(mergePdf, mergePdf.getPageIndices());
+      copiedPages.forEach((page) => originalPdf.addPage(page));
+      const mergedBytes = await originalPdf.save();
+
+      // Create page IDs using the format "page-N" where N is 1-based index
+      // in the combined PDF. This way the export function can correctly find them.
+      const newPageIds = Array.from({ length: numPages }, (_, i) => `page-${currentPageCount + i + 1}`);
+
+      usePDFStore.setState((state) => ({
+        document: {
+          ...state.document,
+          originalBytes: mergedBytes.buffer as ArrayBuffer,
+          modifications: {
+            ...state.document.modifications,
+            pageOrder: [...state.document.modifications.pageOrder, ...newPageIds]
+          }
+        }
+      }));
+    } catch (e) { console.error("Merge failed:", e); alert("Failed to merge PDF"); }
   },
 
   addAnnotation: (pageId, annotation) => {

@@ -75,10 +75,10 @@ export function HomeScreen() {
                 onDrop={onDrop}
                 onClick={() => fileInputRef.current?.click()}
             >
-                <div className="flex-1 pr-8 mb-8 md:mb-0 text-center md:text-left">
+                <div className="flex-1 mb-8 md:mb-0 text-center md:text-left">
                     <h1 className="text-4xl font-bold mb-4 text-(--color-text-main) tracking-tight">PDFEdit</h1>
                     <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                        <button className="btn-primary" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
+                        <button className="btn-primary inline-flex" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
                             <FileText size={20} />
                             Select a PDF
                         </button>

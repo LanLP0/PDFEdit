@@ -12,13 +12,13 @@ interface EditorScreenProps {
 export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorScreenProps) {
     const { document, settings, rotatePage, deletePage, setZoom } = usePDFStore();
     const mergeInputRef = useRef<HTMLInputElement>(null);
+    const handleMergeFile = usePDFStore((state) => state.mergeFile);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const pageRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const [pageInput, setPageInput] = useState('');
     const [zoomInput, setZoomInput] = useState(String(settings.zoom));
     // Track whether the index change came from scrolling or from external (e.g. sidebar)
     const closestIdx = useRef(0);
-    // const pendingScrollIdx = useRef<number | null>(null);
 
     const order = document.modifications.pageOrder;
     const totalPages = order.length;
@@ -62,44 +62,6 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
         deletePage(currentPageId);
     };
 
-    const handleMergeFile = async (file: File) => {
-        try {
-            const buffer = await file.arrayBuffer();
-            const { PDFDocument } = await import('pdf-lib');
-            const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false });
-            const numPages = pdfDoc.getPageCount();
-
-            const currentBytes = usePDFStore.getState().document.originalBytes;
-            if (!currentBytes) return;
-
-            const originalPdf = await PDFDocument.load(currentBytes);
-            const currentPageCount = originalPdf.getPageCount();
-
-            const mergePdf = await PDFDocument.load(buffer);
-            const copiedPages = await originalPdf.copyPages(mergePdf, mergePdf.getPageIndices());
-            copiedPages.forEach((page) => originalPdf.addPage(page));
-            const mergedBytes = await originalPdf.save();
-
-            // Create page IDs using the format "page-N" where N is 1-based index
-            // in the combined PDF. This way the export function can correctly find them.
-            const newPageIds = Array.from({ length: numPages }, (_, i) => `page-${currentPageCount + i + 1}`);
-
-            usePDFStore.setState((state) => ({
-                document: {
-                    ...state.document,
-                    originalBytes: mergedBytes.buffer as ArrayBuffer,
-                    modifications: {
-                        ...state.document.modifications,
-                        pageOrder: [...state.document.modifications.pageOrder, ...newPageIds]
-                    }
-                }
-            }));
-
-            // Reset the file input so the same file can be merged again
-            if (mergeInputRef.current) mergeInputRef.current.value = '';
-        } catch (e) { console.error("Merge failed:", e); alert("Failed to merge PDF"); }
-    };
-
     const handlePageInputSubmit = () => {
         const num = parseInt(pageInput, 10);
         if (!isNaN(num) && num >= 1 && num <= totalPages) scrollToPage(num - 1);
@@ -128,7 +90,7 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-(--color-bg-panel) border border-(--color-border) rounded-xl shadow-(--shadow-floating) px-4 py-2.5 flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                     <button className="btn-icon p-1.5" onClick={() => scrollToPage(visiblePageIndex - 1)} disabled={visiblePageIndex <= 0}><ChevronLeft size={18} /></button>
-                    <span className="text-sm font-medium text-(--color-text-main) tabular-nums">
+                    <span className="inline-flex items-center text-sm font-medium text-(--color-text-main) tabular-nums">
                         <input type="text" className="w-12 text-center text-sm px-1 py-1 rounded-md border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) outline-none focus:border-primary"
                             placeholder={String(visiblePageIndex + 1)} value={pageInput} onChange={(e) => setPageInput(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handlePageInputSubmit(); }} onBlur={handlePageInputSubmit} title="Jump to page" />
@@ -144,20 +106,22 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
                         placeholder="#" value={pageInput} onChange={(e) => setPageInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handlePageInputSubmit(); }} onBlur={handlePageInputSubmit} title="Jump to page" />
                 </div> */}
-                <div className="w-px h-6 bg-(--color-border)"></div>
-                <div className="flex items-center gap-1">
-                    <button className="btn-icon p-1.5" onClick={handleRotate} title="Rotate 90°"><RotateCw size={16} /></button>
-                    <button className="btn-icon p-1.5" onClick={handleDeletePage} title="Delete page" disabled={totalPages <= 1}><Trash2 size={16} /></button>
-                    <button className="btn-icon p-1.5" onClick={() => mergeInputRef.current?.click()} title="Merge PDF"><FilePlus size={16} /></button>
-                    <input type="file" accept="application/pdf" className="hidden" ref={mergeInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMergeFile(f); }} />
+                <div className="hidden md:flex items-center gap-4">
+                    <div className="w-px h-6 bg-(--color-border)" />
+                    <div className="flex items-center gap-1">
+                        <button className="btn-icon p-1.5" onClick={handleRotate} title="Rotate 90°"><RotateCw size={16} /></button>
+                        <button className="btn-icon p-1.5" onClick={handleDeletePage} title="Delete page" disabled={totalPages <= 1}><Trash2 size={16} /></button>
+                        <button className="btn-icon p-1.5" onClick={() => mergeInputRef.current?.click()} title="Merge PDF"><FilePlus size={16} /></button>
+                        <input type="file" accept="application/pdf" className="hidden" ref={mergeInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMergeFile(f); if (mergeInputRef.current) mergeInputRef.current.value = ''; }} />
+                    </div>
+                    <div className="w-px h-6 bg-(--color-border)" />
                 </div>
-                <div className="w-px h-6 bg-(--color-border)"></div>
                 <div className="flex items-center gap-1.5">
                     <button className="btn-icon p-1.5" onClick={() => setZoom(settings.zoom - 10)} title="Zoom Out"><ZoomOut size={16} /></button>
                     <input type="text" className="w-14 text-center text-sm px-1 py-1 rounded-md border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) outline-none focus:border-primary tabular-nums"
                         value={zoomInput} onChange={(e) => setZoomInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleZoomInputSubmit(); }} onBlur={handleZoomInputSubmit} title="Zoom %" />
-                    <span className="text-xs text-(--color-text-muted)">%</span>
+                    <span className="hidden md:block text-xs text-(--color-text-muted)">%</span>
                     <button className="btn-icon p-1.5" onClick={() => setZoom(settings.zoom + 10)} title="Zoom In"><ZoomIn size={16} /></button>
                 </div>
             </div>

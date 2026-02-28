@@ -336,6 +336,7 @@ function StrokeAnnotation({ pageId, annotation, containerRef, isSelected }: {
     };
 
     const handleDelete = (e: React.MouseEvent) => {
+        console.log('Handle delete stroke annotation:', pageId, annotation.id);
         e.stopPropagation();
         deleteAnnotation(pageId, annotation.id);
     };
@@ -370,7 +371,7 @@ function StrokeAnnotation({ pageId, annotation, containerRef, isSelected }: {
                 <div className="absolute -top-5 -right-5 z-30">
                     <button
                         className="w-8 h-8 rounded-lg bg-(--color-bg-panel) border border-(--color-border) shadow-(--shadow-floating) flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors"
-                        onClick={handleDelete}
+                        onPointerDown={handleDelete}
                         title="Delete annotation"
                     >
                         <Trash2 size={14} />
@@ -427,6 +428,7 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
     };
 
     const handleDelete = (e: React.MouseEvent) => {
+        console.log('Handle delete draggable annotation:', pageId, annotation.id);
         e.stopPropagation();
         deleteAnnotation(pageId, annotation.id);
     };

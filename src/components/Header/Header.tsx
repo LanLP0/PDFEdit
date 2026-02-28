@@ -1,4 +1,4 @@
-import { Download, Moon, Sun, Monitor, Undo2, Redo2 } from 'lucide-react';
+import { Download, Moon, Sun, Monitor, Undo2, Redo2, PanelLeft, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { usePDFStore } from '../../store/usePDFStore';
 import { PdfEngine } from '../../lib/pdf/PdfEngine';
 import { useState, useRef, useEffect } from 'react';
@@ -9,6 +9,8 @@ export function Header() {
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState('');
     const nameInputRef = useRef<HTMLInputElement>(null);
+    const sidebarCollapse = usePDFStore((state) => state.settings.sidebarCollapse);
+    const setSidebarCollapse = usePDFStore((state) => state.setSidebarCollapse);
 
     const handleThemeCycle = () => {
         if (settings.theme === 'light') setTheme('dark');
@@ -78,7 +80,14 @@ export function Header() {
         <header className="flex items-center justify-between px-6 py-3 border-b border-(--color-border) bg-(--color-bg-panel) shadow-sm z-50 relative">
             <div className="flex items-center gap-4">
                 <button
-                    className="font-bold text-xl tracking-tight text-primary hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-none outline-none"
+                    className={document.originalBytes ? "block lg:hidden btn-icon p-1.5" : "hidden" /* Hidden if no document is open */}
+                    onClick={() => setSidebarCollapse(!sidebarCollapse)}
+                    title="Toggle Sidebar"
+                >
+                    {sidebarCollapse ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                </button>
+                <button
+                    className="hidden md:block font-bold text-xl tracking-tight text-primary hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-none outline-none"
                     onClick={handleGoHome}
                     title={document.originalBytes ? 'Back to Home' : 'PDFEdit'}
                 >
@@ -133,13 +142,13 @@ export function Header() {
             </div>
 
             <div className="flex items-center gap-3">
-                <button onClick={handleThemeCycle} className="btn-icon" title={`Theme: ${settings.theme}`}>
+                <button onClick={handleThemeCycle} className="hidden md:block btn-icon" title={`Theme: ${settings.theme}`}>
                     <ThemeIcon size={20} />
                 </button>
                 {document.originalBytes && (
                     <button className="btn-primary flex items-center gap-2" onClick={handleExport} disabled={isExporting}>
                         <Download size={16} />
-                        {isExporting ? 'Exporting...' : 'Export'}
+                        <span className="hidden md:block">{isExporting ? 'Exporting...' : 'Export'}</span>
                     </button>
                 )}
             </div>

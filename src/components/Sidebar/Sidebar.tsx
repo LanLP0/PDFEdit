@@ -1,16 +1,12 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePDFStore } from '../../store/usePDFStore';
 import type { ToolType } from '../../store/usePDFStore';
 import { defaultTextStyle, availableFonts } from '../../store/usePDFStore';
-import { MousePointer2, Type, Image as ImageIcon, PenTool, Layers, Grid2X2, Bold, Italic, Underline, Highlighter, Pencil, GripVertical, RotateCw, Trash2, Link2, Move } from 'lucide-react';
+import { MousePointer2, Type, Image as ImageIcon, PenTool, Layers, Grid2X2, Bold, Italic, Underline, Highlighter, Pencil, GripVertical, RotateCw, Trash2, Link2, Move, ChevronLeft, FilePlus } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import {
-    DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
-} from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
-import {
-    arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
-} from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable, } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -37,8 +33,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
-    const { settings, document, setSidebarMode, setActiveTool, setCurrentTextStyle, setBrushSettings, updateAnnotation, selectAnnotation, rotatePage, deletePage, updatePageOrder } = usePDFStore();
+    const { settings, document, closeDocument, setSidebarMode, setActiveTool, setCurrentTextStyle, setBrushSettings, updateAnnotation, selectAnnotation, rotatePage, deletePage, updatePageOrder } = usePDFStore();
     const { sidebarMode, activeTool, currentTextStyle, brushSettings, selectedAnnotationId, selectedAnnotationPageId } = settings;
+
+    const mergeInputRef = useRef<HTMLInputElement>(null);
+    const handleMergeFile = usePDFStore((state) => state.mergeFile);
 
     const selectedAnn = selectedAnnotationId && selectedAnnotationPageId
         ? (document.modifications.annotations[selectedAnnotationPageId] || []).find(a => a.id === selectedAnnotationId)
@@ -49,6 +48,41 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
     const showTextOptions = activeTool === 'text' || isEditingTextAnn;
     const showHighlightOptions = activeTool === 'highlight';
     const showDrawOptions = activeTool === 'draw';
+
+    const sidebarCollapse = usePDFStore((state) => state.settings.sidebarCollapse);
+    const setSidebarCollapse = usePDFStore((state) => state.setSidebarCollapse);
+    const [isSmallWidth, setIsSmallWidth] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mq = window.matchMedia('(max-width: 1023px)');
+        const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+            let isSmallWidth = Boolean(e.matches);
+            setSidebarCollapse(isSmallWidth);
+            setIsSmallWidth(isSmallWidth);
+        };
+
+        setSidebarCollapse(mq.matches);
+        setIsSmallWidth(mq.matches);
+        mq.addEventListener('change', handler);
+        return () => {
+            mq.removeEventListener('change', handler);
+        };
+    }, []);
+
+    const handleGoHome = () => {
+        if (!document.originalBytes) return;
+        const hasModifications =
+            Object.keys(document.modifications.rotations).length > 0 ||
+            Object.keys(document.modifications.annotations).length > 0 ||
+            document.modifications.deletedPages.length > 0;
+
+        if (hasModifications) {
+            const answer = window.confirm('You have unsaved changes. Do you want to discard them and go back to the home screen?');
+            if (!answer) return;
+        }
+        closeDocument();
+    };
 
     // Get current font definition for variant support checks
     const currentFontDef = availableFonts.find(f => f.name === activeStyle.fontFamily) || availableFonts[0];
@@ -103,7 +137,7 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
     };
 
     return (
-        <div className="w-52 shrink-0 border-r border-(--color-border) bg-(--color-bg-panel) flex flex-col overflow-hidden">
+        <div className={`${sidebarCollapse ? 'hidden' : 'w-52'} shrink-0 border-r border-(--color-border) bg-(--color-bg-panel) flex flex-col overflow-hidden`}>
             {/* Tab Headers */}
             <div className="flex items-center justify-center gap-2 px-3 py-3 shrink-0">
                 <button
@@ -125,7 +159,7 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
                 {sidebarMode === 'tools' && (
-                    <div className="py-3 space-y-3">
+                    <div className="py-3 space-y-3 mb-10">
                         {/* Per-tool Color Picker */}
                         {showColorPicker && (
                             <div className="mx-3">
@@ -213,7 +247,7 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                                 return (
                                     <button key={t.id}
                                         className={`py-2.5 px-3 w-full rounded-lg flex items-center gap-3 text-sm font-medium transition-all border ${isActive ? 'border-primary text-primary bg-(--color-bg-active) shadow-sm' : 'border-(--color-border) text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-main)'}`}
-                                        onClick={() => { setActiveTool(t.id); if (t.id !== 'text') selectAnnotation(null, null); }}
+                                        onClick={() => { if (activeTool === t.id) return; setActiveTool(t.id); if (isSmallWidth) setSidebarCollapse(true); if (t.id !== 'text') selectAnnotation(null, null); }}
                                     >
                                         <Icon size={18} />
                                         {t.label}
@@ -221,11 +255,18 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                                 );
                             })}
                         </div>
+
+                        <div className='absolute bottom-0 py-2.5 px-3 rounded-lg flex items-center gap-3 text-sm font-medium transition-all'>
+                            <button onClick={handleGoHome} className='w-full py-2.5 px-3 rounded-lg flex items-center gap-3 text-sm font-medium transition-all bg-(--color-bg-panel) text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-main)'>
+                                <ChevronLeft size={18} />
+                                Go back
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {sidebarMode === 'thumbnails' && (
-                    <div className="p-2 space-y-2">
+                    <div className="p-2 space-y-2 mb-10">
                         <div className="px-1 py-1 text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted)">
                             {order.length} Pages — Drag to reorder
                         </div>
@@ -241,6 +282,15 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                                 ))}
                             </SortableContext>
                         </DndContext>
+
+                        {/* Merge PDF */}
+                        <div className='absolute bottom-0 py-2.5 px-3 rounded-lg flex items-center gap-3 text-sm font-medium transition-all'>
+                            <button onClick={() => mergeInputRef.current?.click()} className='w-full py-2.5 px-3 rounded-lg flex items-center gap-3 text-sm font-medium transition-all bg-(--color-bg-panel) text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-text-main)'>
+                                <FilePlus size={18} />
+                                Merge PDF
+                            </button>
+                            <input type="file" accept="application/pdf" className="hidden" ref={mergeInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMergeFile(f); if (mergeInputRef.current) mergeInputRef.current.value = ''; }} />
+                        </div>
                     </div>
                 )}
             </div>
