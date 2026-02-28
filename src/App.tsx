@@ -69,6 +69,7 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // These tools won't activate the touchmove block
     if (tool === 'pointer' || tool === 'text' || tool === 'link' || tool === 'signature') {
       if (!touchMoveHandlerAdded) return;
 

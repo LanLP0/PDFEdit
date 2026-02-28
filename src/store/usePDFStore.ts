@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
-export type ToolType = 'pointer' | 'text' | 'image' | 'signature' | 'highlight' | 'draw' | 'link';
+// The Move tool is a dummy tool used to activate the touchmove block for mobile users. Other tools function in the editor as expected.
+export type ToolType = 'pointer' | 'text' | 'image' | 'signature' | 'highlight' | 'draw' | 'link' | 'move';
 
 export interface TextStyle {
   fontFamily: string;

@@ -65,7 +65,7 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
         // Deselect on background click
         selectAnnotation(null, null);
 
-        if (activeTool === 'pointer') return;
+        if (activeTool === 'pointer' || activeTool === 'move') return;
 
         const pos = getRelativePos(e);
 
@@ -390,6 +390,7 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
 }) {
     const [isDragging, setIsDragging] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const activeTool = usePDFStore((state) => state.settings.activeTool);
     const updateAnnotation = usePDFStore((state) => state.updateAnnotation);
     const deleteAnnotation = usePDFStore((state) => state.deleteAnnotation);
     const selectAnnotation = usePDFStore((state) => state.selectAnnotation);
@@ -398,7 +399,7 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
     const handlePointerDown = (e: React.PointerEvent) => {
         e.stopPropagation();
         selectAnnotation(pageId, annotation.id);
-        if (annotation.type === 'text') setActiveTool('text');
+        if (annotation.type === 'text' && activeTool !== 'move') setActiveTool('text');
         setIsDragging(true);
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
     };

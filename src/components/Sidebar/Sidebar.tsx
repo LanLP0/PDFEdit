@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { usePDFStore } from '../../store/usePDFStore';
 import type { ToolType } from '../../store/usePDFStore';
 import { defaultTextStyle, availableFonts } from '../../store/usePDFStore';
-import { MousePointer2, Type, Image as ImageIcon, PenTool, Layers, Grid2X2, Bold, Italic, Underline, Highlighter, Pencil, GripVertical, RotateCw, Trash2, Link2 } from 'lucide-react';
+import { MousePointer2, Type, Image as ImageIcon, PenTool, Layers, Grid2X2, Bold, Italic, Underline, Highlighter, Pencil, GripVertical, RotateCw, Trash2, Link2, Move } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import {
     DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -26,6 +26,7 @@ const tools: { id: ToolType; icon: typeof MousePointer2; label: string }[] = [
     { id: 'signature', icon: PenTool, label: 'Sign' },
     { id: 'highlight', icon: Highlighter, label: 'Highlight' },
     { id: 'draw', icon: Pencil, label: 'Draw' },
+    { id: 'move', icon: Move, label: 'Move' },
 ];
 
 const fontSizeOptions = [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48];
