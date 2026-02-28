@@ -1,0 +1,31 @@
+name: Build Electron App
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          cache: 'npm'
+
+      - name: Package Electron
+        run: |
+          npm ci
+          npm run package
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          path: "out/make/"
+          if-no-files-found: "error"
