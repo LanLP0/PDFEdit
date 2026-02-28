@@ -9,6 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
+      fail-fast: false
 
     steps:
       - name: Check out repository
@@ -19,7 +20,7 @@ jobs:
         with:
           cache: 'npm'
 
-      - name: Package Electron
+      - name: Make Electron
         run: |
           npm ci
           npm run make
