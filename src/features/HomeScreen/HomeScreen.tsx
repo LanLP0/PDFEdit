@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { UploadCloud, FileText, Clock, File, Trash2 } from 'lucide-react';
+import { UploadCloud, FileText, Clock, File, Trash2, ALargeSmall, ArrowUpNarrowWide, ArrowDownNarrowWide } from 'lucide-react';
 import { getRecentFiles, removeRecentFile } from '../../lib/recentFiles';
 import type { RecentFileEntry } from '../../lib/recentFiles';
 import { openFile } from '../../lib/openFile';
@@ -9,6 +9,8 @@ export function HomeScreen() {
     const recentInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [recentFiles, setRecentFiles] = useState<RecentFileEntry[]>([]);
+    const [sortType, setSortType] = useState<'name' | 'date'>('date');
+    const [sortAscending, setSortAscending] = useState<boolean>(false);
 
     useEffect(() => {
         (async () => {
@@ -20,6 +22,17 @@ export function HomeScreen() {
             }
         })();
     }, []);
+
+    // Ordering
+    useEffect(() => {
+        let sortedList = [...recentFiles].sort((a, b) => {
+            if (sortType === 'name') {
+                return sortAscending ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+            }
+            return sortAscending ? a.lastOpened - b.lastOpened : b.lastOpened - a.lastOpened;
+        });
+        setRecentFiles(sortedList);
+    }, [sortType, sortAscending]);
 
     const handleFileSelect = async (file: File) => {
         await openFile(file);
@@ -102,6 +115,23 @@ export function HomeScreen() {
                 <div className="flex items-center gap-2 mb-6 text-(--color-text-main)">
                     <Clock size={20} className="text-primary" />
                     <h2 className="text-xl font-semibold">Recent Documents</h2>
+                    <div className="flex-1"></div>
+                    <div className="flex items-center gap-2 bg-(--color-bg-panel) rounded-md py-1 px-2 border border-(--color-border)">
+                        <button onClick={() => { setSortType(sortType === 'name' ? 'date' : 'name'); }} className="p-1 rounded-md hover:text-primary hover:bg-(--color-bg-hover) transition-all">
+                            {
+                                sortType === 'name'
+                                    ? <div className="inline-flex items-center gap-1"><ALargeSmall size={20} />&nbsp;Name</div>
+                                    : <div className="inline-flex items-center gap-1"><Clock size={20} />&nbsp;Time</div>
+                            }
+                        </button>
+                        <button onClick={() => { setSortAscending(!sortAscending); }} className="p-1 rounded-md hover:text-primary hover:bg-(--color-bg-hover) transition-all">
+                            {
+                                sortAscending
+                                    ? <div className="inline-flex items-center gap-1"><ArrowUpNarrowWide size={20} />&nbsp;{sortType === 'name' ? 'Z-A' : 'Oldest'}</div>
+                                    : <div className="inline-flex items-center gap-1"><ArrowDownNarrowWide size={20} />&nbsp;{sortType === 'name' ? 'A-Z' : 'Newest'}</div>
+                            }
+                        </button>
+                    </div>
                 </div>
 
                 {recentFiles.length === 0 ? (
