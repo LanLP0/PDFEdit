@@ -9,7 +9,7 @@ import { openFile, openFilePath } from './lib/openFile';
 import { isElectron, getElectronAPI } from './lib/electron';
 
 function App() {
-  const { document, settings, undo, redo } = usePDFStore();
+  const { document, settings, undo, redo, closeDocument } = usePDFStore();
   const [visiblePageIndex, setVisiblePageIndex] = useState(0);
 
   // Reset page index when document changes
@@ -107,6 +107,48 @@ function App() {
     if (file && file.type === 'application/pdf') {
       openFile(file);
     }
+  }, []);
+
+  // Handle quit events
+  useEffect(() => {
+    const handleTabClose = (event: BeforeUnloadEvent) => {
+      console.log('handleTabClose triggered');
+      const state = usePDFStore.getState();
+      if (!state.haveUnsavedChanges()) return;
+
+      event.preventDefault();
+
+      return (event.returnValue =
+        'You have unsaved changes. Do you want to discard them and exit?');
+    };
+
+    window.addEventListener('beforeunload', handleTabClose);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleTabClose);
+    };
+  }, []);
+
+  // Electron Quit
+  useEffect(() => {
+    if (!isElectron) return;
+    const api = getElectronAPI();
+    const cleanup = api.onCloseRequested(() => {
+      const state = usePDFStore.getState();
+      if (!state.haveUnsavedChanges()) {
+        closeDocument();
+        api.notifyCloseWindow();
+        return;
+      }
+
+      const answer = window.confirm('You have unsaved changes. Do you want to discard them and exit?');
+      if (!answer) return;
+
+      closeDocument();
+      api.notifyCloseWindow();
+    });
+
+    return cleanup;
   }, []);
 
   return (

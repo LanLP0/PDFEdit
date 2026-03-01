@@ -9,9 +9,9 @@
    id="svg1"
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
    sodipodi:docname="icon.svg"
-   inkscape:export-filename="icon_512x.png"
-   inkscape:export-xdpi="48"
-   inkscape:export-ydpi="48"
+   inkscape:export-filename="icon_256x.png"
+   inkscape:export-xdpi="24.000029"
+   inkscape:export-ydpi="24.000029"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -28,9 +28,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showguides="true"
-     inkscape:zoom="0.67626953"
-     inkscape:cx="770.40289"
-     inkscape:cy="598.87365"
+     inkscape:zoom="0.47819477"
+     inkscape:cx="116.0615"
+     inkscape:cy="600.17386"
      inkscape:window-width="1902"
      inkscape:window-height="1000"
      inkscape:window-x="1"
@@ -89,6 +89,18 @@
        x2="231.25606"
        y2="231.25603"
        gradientUnits="userSpaceOnUse" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect2-8"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="42"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="true"
+       uniform="false" />
   </defs>
   <g
      inkscape:label="Layer 1"
@@ -101,14 +113,10 @@
        sodipodi:nodetypes="scccscscs"
        inkscape:path-effect="#path-effect2"
        inkscape:original-d="M 3.2333333e-4,1.3333333e-5 C 45.155716,8.8888887e-6 78.570706,5.5999999e-6 135.4665,0 192.36257,5.5999999e-6 227.58394,9.066666e-6 270.93333,1.3333333e-5 270.93323,43.34934 270.93314,78.570668 270.93301,135.46666 c 1.3e-4,56.896 2.1e-4,90.31111 3.2e-4,135.46667 -45.15561,0 -78.57076,-1e-5 -135.46683,-1e-5 -56.895794,0 -90.310784,1e-5 -135.46617666667,1e-5 C 2.1555555e-4,225.77777 1.358e-4,192.36266 0,135.46666 1.358e-4,78.570668 2.1555555e-4,45.155562 3.2333333e-4,1.3333333e-5 Z" />
-    <rect
-       style="fill:#ffffff;fill-opacity:1;stroke-width:0.164173"
+    <path
        id="rect2"
-       width="30"
-       height="206.86636"
-       x="82.26767"
-       y="-270.93332"
-       ry="0"
+       style="fill:#ffffff;fill-opacity:1;stroke-width:0.164173"
+       d="M 82.267847 -64.06689 L 82.267847 -269.8595 C 91.325569 -270.50581 101.2816 -270.76315 112.26757 -270.86564 L 112.26757 -64.06689 L 82.267847 -64.06689 z "
        transform="scale(1,-1)" />
     <path
        id="path1"

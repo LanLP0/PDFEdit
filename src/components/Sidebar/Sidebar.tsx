@@ -71,16 +71,14 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
     }, []);
 
     const handleGoHome = () => {
-        if (!document.originalBytes) return;
-        const hasModifications =
-            Object.keys(document.modifications.rotations).length > 0 ||
-            Object.keys(document.modifications.annotations).length > 0 ||
-            document.modifications.deletedPages.length > 0;
-
-        if (hasModifications) {
-            const answer = window.confirm('You have unsaved changes. Do you want to discard them and go back to the home screen?');
-            if (!answer) return;
+        if (!usePDFStore.getState().haveUnsavedChanges()) {
+            closeDocument();
+            return;
         }
+
+        const answer = window.confirm('You have unsaved changes. Do you want to discard them and go back to the home screen?');
+        if (!answer) return;
+
         closeDocument();
     };
 

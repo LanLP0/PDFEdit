@@ -8,11 +8,12 @@
   "main": ".vite/build/main.js",
   "scripts": {
     "dev": "vite",
-    "dev:electron": "cross-env ELECTRON=1 vite",
+    "dev:electron": "electron .",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "cross-env ELECTRON=1 electron-forge start",
+    "pack": "npm run package",
     "package": "cross-env ELECTRON=1 electron-forge package",
     "make": "cross-env ELECTRON=1 electron-forge make"
   },

@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
 
 // The Move tool is a dummy tool used to activate the touchmove block for mobile users. Other tools function in the editor as expected.
@@ -141,6 +140,7 @@ interface PDFStore {
   updateAnnotation: (pageId: string, annotationId: string, updates: Partial<Annotation>) => void;
   deleteAnnotation: (pageId: string, annotationId: string) => void;
 
+  haveUnsavedChanges: () => boolean;
   closeDocument: () => void;
 }
 
@@ -501,11 +501,25 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
     });
   },
 
+  haveUnsavedChanges: () => {
+    const state = get();
+    if (!state.document.originalBytes) return false;
+
+    const hasModifications =
+      Object.keys(state.document.modifications.rotations).length > 0 ||
+      Object.keys(state.document.modifications.annotations).length > 0 ||
+      state.document.modifications.deletedPages.length > 0;
+
+    return hasModifications;
+  },
+
   closeDocument: () => set((state) => ({
     document: initialDocumentState,
     settings: { ...state.settings, sidebarMode: 'tools', activeTool: 'pointer', zoom: 100, selectedAnnotationId: null, selectedAnnotationPageId: null },
     undoStack: [],
     redoStack: [],
+    changedSinceLastUndo: false,
+    recordingUndo: true,
     canUndo: false,
     canRedo: false,
   })),

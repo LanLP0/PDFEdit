@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import path from 'path';
 import iconUrl from '../src/assets/icon.png?url';
 import started from 'electron-squirrel-startup';
+import { useRef } from 'react';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -47,6 +48,9 @@ function createWindow() {
         );
     }
 
+    mainWindow.removeMenu();
+    // buildMenu();
+
     mainWindow.once('ready-to-show', () => {
         mainWindow!.show();
 
@@ -57,12 +61,23 @@ function createWindow() {
         }
     });
 
+    let canClose = false;
+
+    ipcMain.on('close-callback', () => {
+        canClose = true;
+        mainWindow!.close();
+    })
+
+    // Event 'close'
+    mainWindow.on('close', (e) => {
+        if (canClose) return;
+        e.preventDefault();
+        mainWindow!.webContents.send('close-request');
+    })
+
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
-
-    mainWindow.removeMenu();
-    // buildMenu();
 }
 
 // function buildMenu() {

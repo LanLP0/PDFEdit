@@ -2,6 +2,7 @@ import { Download, Moon, Sun, Monitor, Undo2, Redo2, PanelLeftClose, PanelLeftOp
 import { usePDFStore } from '../../store/usePDFStore';
 import { PdfEngine } from '../../lib/pdf/PdfEngine';
 import { useState, useRef, useEffect } from 'react';
+import logoUrl from '../../assets/icon.svg?url';
 
 export function Header() {
     const { document, settings, setTheme, closeDocument, renameDocument, undo, redo, canUndo, canRedo } = usePDFStore();
@@ -41,16 +42,14 @@ export function Header() {
     };
 
     const handleGoHome = () => {
-        if (!document.originalBytes) return;
-        const hasModifications =
-            Object.keys(document.modifications.rotations).length > 0 ||
-            Object.keys(document.modifications.annotations).length > 0 ||
-            document.modifications.deletedPages.length > 0;
-
-        if (hasModifications) {
-            const answer = window.confirm('You have unsaved changes. Do you want to discard them and go back to the home screen?');
-            if (!answer) return;
+        if (!usePDFStore.getState().haveUnsavedChanges()) {
+            closeDocument();
+            return;
         }
+
+        const answer = window.confirm('You have unsaved changes. Do you want to discard them and go back to the home screen?');
+        if (!answer) return;
+
         closeDocument();
     };
 
@@ -77,7 +76,7 @@ export function Header() {
     const ThemeIcon = settings.theme === 'light' ? Sun : settings.theme === 'dark' ? Moon : Monitor;
 
     return (
-        <header className="flex items-center justify-between px-6 py-3 border-b border-(--color-border) bg-(--color-bg-panel) shadow-sm z-50 relative">
+        <header className="flex items-center justify-between px-3 md:px-6 py-3  border-b border-(--color-border) bg-(--color-bg-panel) shadow-sm z-50 relative">
             <div className="flex items-center gap-4">
                 <button
                     className={document.originalBytes ? "block lg:hidden btn-icon p-1.5" : "hidden" /* Hidden if no document is open */}
@@ -91,7 +90,7 @@ export function Header() {
                     onClick={handleGoHome}
                     title={document.originalBytes ? 'Back to Home' : 'PDFEdit'}
                 >
-                    <img src="./icon.svg" alt="PDFEdit" className="w-8 h-8" />
+                    <img src={logoUrl} alt="PDFEdit" className="w-8 h-8" />
                 </button>
                 {document.originalBytes && (
                     <div className="flex items-center gap-2">

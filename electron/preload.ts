@@ -13,6 +13,10 @@ export type ElectronAPI = {
     platform: NodeJS.Platform;
     /** Register a listener for files opened via File > Open menu or macOS Dock. */
     onOpenFile: (callback: (filePath: string) => void) => () => void;
+    /** Register a listener for close check. */
+    onCloseRequested: (callback: () => void) => () => void;
+    /** Notify close check. */
+    notifyCloseWindow: () => void;
 };
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -42,4 +46,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         // Return a cleanup function
         return () => ipcRenderer.removeListener('open-file', handler);
     },
+
+    // Close check ipc handle between main and renderer
+    onCloseRequested: (callback: () => void) => { ipcRenderer.on('close-request', () => callback()); return () => ipcRenderer.off('close-request', callback); },
+    notifyCloseWindow: () => ipcRenderer.send('close-callback'),
 } satisfies ElectronAPI);
