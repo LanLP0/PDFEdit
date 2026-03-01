@@ -73,7 +73,7 @@ function App() {
     if (tool === 'pointer' || tool === 'text' || tool === 'link' || tool === 'signature') {
       if (!touchMoveHandlerAdded) return;
 
-      console.log('Removing touchmove block handler');
+      // console.log('Removing touchmove block handler');
       window.document.removeEventListener('touchmove', preventTouchMove);
       setTouchMoveHandlerAdded(false);
       return;
@@ -81,7 +81,7 @@ function App() {
 
     if (touchMoveHandlerAdded) return;
 
-    console.log('Adding touchmove block handler');
+    // console.log('Adding touchmove block handler');
     window.document.addEventListener('touchmove', preventTouchMove, { passive: false });
     setTouchMoveHandlerAdded(true);
   }, [tool])

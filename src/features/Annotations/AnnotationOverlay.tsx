@@ -312,6 +312,7 @@ function StrokeAnnotation({ pageId, annotation, containerRef, isSelected }: {
             y: ((e.clientY - rect.top) / rect.height) * 100,
         };
         setIsDragging(true);
+        usePDFStore.getState().suspendRecordingUndo();
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     };
 
@@ -331,12 +332,12 @@ function StrokeAnnotation({ pageId, annotation, containerRef, isSelected }: {
 
     const handlePointerUp = (e: React.PointerEvent) => {
         setIsDragging(false);
+        usePDFStore.getState().resumeRecordingUndo();
         dragStart.current = null;
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     };
 
     const handleDelete = (e: React.MouseEvent) => {
-        console.log('Handle delete stroke annotation:', pageId, annotation.id);
         e.stopPropagation();
         deleteAnnotation(pageId, annotation.id);
     };
@@ -402,6 +403,7 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
         selectAnnotation(pageId, annotation.id);
         if (annotation.type === 'text' && activeTool !== 'move') setActiveTool('text');
         setIsDragging(true);
+        usePDFStore.getState().suspendRecordingUndo();
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
     };
 
@@ -415,12 +417,16 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
 
     const handlePointerUp = (e: React.PointerEvent) => {
         setIsDragging(false);
+        usePDFStore.getState().resumeRecordingUndo();
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     };
 
     const handleDoubleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (annotation.type === 'text') setIsEditing(true);
+        if (annotation.type === 'text') {
+            setIsEditing(true);
+            usePDFStore.getState().suspendRecordingUndo();
+        }
         if (annotation.type === 'link') {
             const payload = annotation.payload as LinkPayload;
             if (payload.url) window.open(payload.url, '_blank');
@@ -428,7 +434,6 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
     };
 
     const handleDelete = (e: React.MouseEvent) => {
-        console.log('Handle delete draggable annotation:', pageId, annotation.id);
         e.stopPropagation();
         deleteAnnotation(pageId, annotation.id);
     };

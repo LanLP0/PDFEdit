@@ -123,7 +123,7 @@ export function Header() {
                             <button
                                 className="btn-icon p-1.5"
                                 onClick={undo}
-                                disabled={!canUndo}
+                                hidden={!canUndo}
                                 title="Undo (Ctrl+Z)"
                             >
                                 <Undo2 size={16} />
@@ -131,7 +131,7 @@ export function Header() {
                             <button
                                 className="btn-icon p-1.5"
                                 onClick={redo}
-                                disabled={!canRedo}
+                                hidden={!canRedo}
                                 title="Redo (Ctrl+Shift+Z)"
                             >
                                 <Redo2 size={16} />

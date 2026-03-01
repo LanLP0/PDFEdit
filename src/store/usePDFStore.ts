@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { create } from 'zustand';
 
 // The Move tool is a dummy tool used to activate the touchmove block for mobile users. Other tools function in the editor as expected.
@@ -113,8 +114,12 @@ interface PDFStore {
   redoStack: Modifications[];
   canUndo: boolean;
   canRedo: boolean;
+  changedSinceLastUndo: Boolean;
+  recordingUndo: boolean;
   undo: () => void;
   redo: () => void;
+  suspendRecordingUndo: () => void;
+  resumeRecordingUndo: () => void;
 
   setTheme: (theme: AppSettings['theme']) => void;
   setSidebarMode: (mode: AppSettings['sidebarMode']) => void;
@@ -182,10 +187,12 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
   redoStack: [],
   canUndo: false,
   canRedo: false,
+  changedSinceLastUndo: false, // This value is only used to check when suspending recording undo, as normally all changes will be recorded
+  recordingUndo: true,
 
   // --- Undo / Redo ---
   undo: () => set((state) => {
-    if (state.undoStack.length === 0) return state;
+    if (!state.canUndo && state.undoStack.length === 0) return state;
     const prev = state.undoStack[state.undoStack.length - 1];
     const newUndoStack = state.undoStack.slice(0, -1);
     const newRedoStack = [...state.redoStack, cloneMods(state.document.modifications)].slice(-MAX_HISTORY);
@@ -199,7 +206,7 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
   }),
 
   redo: () => set((state) => {
-    if (state.redoStack.length === 0) return state;
+    if (!state.canRedo && state.redoStack.length === 0) return state;
     const next = state.redoStack[state.redoStack.length - 1];
     const newRedoStack = state.redoStack.slice(0, -1);
     const newUndoStack = [...state.undoStack, cloneMods(state.document.modifications)].slice(-MAX_HISTORY);
@@ -211,6 +218,43 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
       canRedo: newRedoStack.length > 0,
     };
   }),
+
+  suspendRecordingUndo: () => {
+    const state = get();
+    if (!state.recordingUndo) return;
+    console.log("RecordingUndo Suspended");
+
+    if (state.changedSinceLastUndo) {
+      set({
+        undoStack: [...state.undoStack, cloneMods(state.document.modifications)].slice(-MAX_HISTORY),
+      })
+    }
+
+    set({
+      recordingUndo: false,
+      canUndo: false,
+      canRedo: false,
+      changedSinceLastUndo: false,
+    });
+  },
+
+  resumeRecordingUndo: () => {
+    const state = get();
+    if (state.recordingUndo) return;
+    console.log("RecordingUndo Resumed");
+
+    if (state.changedSinceLastUndo) {
+      set({
+        redoStack: [], // Release the redo stack because this previous state in unrecorded
+      })
+    }
+
+    set({
+      recordingUndo: true,
+      canUndo: state.undoStack.length > 0,
+      canRedo: state.redoStack.length > 0,
+    });
+  },
 
   // --- Settings (no undo tracking) ---
   setTheme: (theme) => set((state) => ({ settings: { ...state.settings, theme } })),
@@ -238,6 +282,8 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
       settings: { ...initialSettings, theme: get().settings.theme },
       undoStack: [],
       redoStack: [],
+      changedSinceLastUndo: false,
+      recordingUndo: true,
       canUndo: false,
       canRedo: false,
     };
@@ -250,6 +296,17 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
   updatePageOrder: (newOrder) => {
     const state = get();
     const snapshot = cloneMods(state.document.modifications);
+    state.changedSinceLastUndo = true;
+    if (!state.recordingUndo) {
+      // Update document (still display) but not the undo stack
+      set({
+        document: { ...state.document, modifications: { ...state.document.modifications, pageOrder: newOrder } },
+        redoStack: [],
+        canUndo: false,
+        canRedo: false,
+      });
+      return;
+    }
     set({
       document: { ...state.document, modifications: { ...state.document.modifications, pageOrder: newOrder } },
       undoStack: [...state.undoStack, snapshot].slice(-MAX_HISTORY),
@@ -265,6 +322,17 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
     const currentRot = state.document.modifications.rotations[pageId] || 0;
     let newRot = (currentRot + degree) % 360;
     if (newRot < 0) newRot += 360;
+    state.changedSinceLastUndo = true;
+    if (!state.recordingUndo) {
+      // Update document (still display) but not the undo stack
+      set({
+        document: { ...state.document, modifications: { ...state.document.modifications, rotations: { ...state.document.modifications.rotations, [pageId]: newRot } } },
+        redoStack: [],
+        canUndo: false,
+        canRedo: false,
+      });
+      return;
+    }
     set({
       document: { ...state.document, modifications: { ...state.document.modifications, rotations: { ...state.document.modifications.rotations, [pageId]: newRot } } },
       undoStack: [...state.undoStack, snapshot].slice(-MAX_HISTORY),
@@ -278,6 +346,17 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
     const state = get();
     const mods = state.document.modifications;
     const snapshot = cloneMods(mods);
+    state.changedSinceLastUndo = true;
+    if (!state.recordingUndo) {
+      // Update document (still display) but not the undo stack
+      set({
+        document: { ...state.document, modifications: { ...mods, deletedPages: [...mods.deletedPages, pageId], pageOrder: mods.pageOrder.filter(id => id !== pageId) } },
+        redoStack: [],
+        canUndo: false,
+        canRedo: false,
+      });
+      return;
+    }
     set({
       document: { ...state.document, modifications: { ...mods, deletedPages: [...mods.deletedPages, pageId], pageOrder: mods.pageOrder.filter(id => id !== pageId) } },
       undoStack: [...state.undoStack, snapshot].slice(-MAX_HISTORY),
@@ -291,7 +370,7 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
     try {
       const buffer = await file.arrayBuffer();
       const { PDFDocument } = await import('pdf-lib');
-      const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false });
+      const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false }); // TODO: maybe this part can be optimized
       const numPages = pdfDoc.getPageCount();
 
       const currentBytes = usePDFStore.getState().document.originalBytes;
@@ -309,24 +388,59 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
       // in the combined PDF. This way the export function can correctly find them.
       const newPageIds = Array.from({ length: numPages }, (_, i) => `page-${currentPageCount + i + 1}`);
 
-      usePDFStore.setState((state) => ({
-        document: {
-          ...state.document,
-          originalBytes: mergedBytes.buffer as ArrayBuffer,
-          modifications: {
-            ...state.document.modifications,
-            pageOrder: [...state.document.modifications.pageOrder, ...newPageIds]
-          }
+      set((state) => {
+        const snapshot = cloneMods(state.document.modifications);
+        state.changedSinceLastUndo = true;
+        if (!state.recordingUndo) {
+          // Update document (still display) but not the undo stack
+          return {
+            document: {
+              ...state.document,
+              originalBytes: mergedBytes.buffer as ArrayBuffer,
+              modifications: {
+                ...state.document.modifications,
+                pageOrder: [...state.document.modifications.pageOrder, ...newPageIds]
+              }
+            },
+            redoStack: [],
+            canUndo: false,
+            canRedo: false,
+          };
         }
-      }));
+        return {
+          document: {
+            ...state.document,
+            originalBytes: mergedBytes.buffer as ArrayBuffer,
+            modifications: {
+              ...state.document.modifications,
+              pageOrder: [...state.document.modifications.pageOrder, ...newPageIds]
+            }
+          },
+          undoStack: [...state.undoStack, snapshot].slice(-MAX_HISTORY),
+          redoStack: [],
+          canUndo: true,
+          canRedo: false,
+        };
+      });
     } catch (e) { console.error("Merge failed:", e); alert("Failed to merge PDF"); }
   },
 
   addAnnotation: (pageId, annotation) => {
     const state = get();
     const mods = state.document.modifications;
-    const snapshot = cloneMods(mods);
     const currentAnns = mods.annotations[pageId] || [];
+    const snapshot = cloneMods(mods);
+    state.changedSinceLastUndo = true;
+    if (!state.recordingUndo) {
+      // Update document (still display) but not the undo stack
+      set({
+        document: { ...state.document, modifications: { ...mods, annotations: { ...mods.annotations, [pageId]: [...currentAnns, annotation] } } },
+        redoStack: [],
+        canUndo: false,
+        canRedo: false,
+      });
+      return;
+    }
     set({
       document: { ...state.document, modifications: { ...mods, annotations: { ...mods.annotations, [pageId]: [...currentAnns, annotation] } } },
       undoStack: [...state.undoStack, snapshot].slice(-MAX_HISTORY),
@@ -339,8 +453,19 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
   updateAnnotation: (pageId, annotationId, updates) => {
     const state = get();
     const mods = state.document.modifications;
-    const snapshot = cloneMods(mods);
     const currentAnns = mods.annotations[pageId] || [];
+    const snapshot = cloneMods(mods);
+    state.changedSinceLastUndo = true;
+    if (!state.recordingUndo) {
+      // Update document (still display) but not the undo stack
+      set({
+        document: { ...state.document, modifications: { ...mods, annotations: { ...mods.annotations, [pageId]: currentAnns.map(ann => ann.id === annotationId ? { ...ann, ...updates } : ann) } } },
+        redoStack: [],
+        canUndo: false,
+        canRedo: false,
+      });
+      return;
+    }
     set({
       document: { ...state.document, modifications: { ...mods, annotations: { ...mods.annotations, [pageId]: currentAnns.map(ann => ann.id === annotationId ? { ...ann, ...updates } : ann) } } },
       undoStack: [...state.undoStack, snapshot].slice(-MAX_HISTORY),
@@ -353,8 +478,19 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
   deleteAnnotation: (pageId, annotationId) => {
     const state = get();
     const mods = state.document.modifications;
-    const snapshot = cloneMods(mods);
     const currentAnns = mods.annotations[pageId] || [];
+    const snapshot = cloneMods(mods);
+    state.changedSinceLastUndo = true;
+    if (!state.recordingUndo) {
+      // Update document (still display) but not the undo stack
+      set({
+        document: { ...state.document, modifications: { ...mods, annotations: { ...mods.annotations, [pageId]: currentAnns.filter(ann => ann.id !== annotationId) } } },
+        redoStack: [],
+        canUndo: false,
+        canRedo: false,
+      });
+      return;
+    }
     set({
       document: { ...state.document, modifications: { ...mods, annotations: { ...mods.annotations, [pageId]: currentAnns.filter(ann => ann.id !== annotationId) } } },
       settings: { ...state.settings, selectedAnnotationId: null, selectedAnnotationPageId: null },
