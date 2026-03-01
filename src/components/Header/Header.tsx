@@ -3,12 +3,14 @@ import { usePDFStore } from '../../store/usePDFStore';
 import { PdfEngine } from '../../lib/pdf/PdfEngine';
 import { useState, useRef, useEffect } from 'react';
 import logoUrl from '../../assets/icon.svg?url';
+import { ConfirmationModal } from '../Modal/ConfirmationModal';
 
 export function Header() {
     const { document, settings, setTheme, closeDocument, renameDocument, undo, redo, canUndo, canRedo } = usePDFStore();
     const [isExporting, setIsExporting] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState('');
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
     const nameInputRef = useRef<HTMLInputElement>(null);
     const sidebarCollapse = usePDFStore((state) => state.settings.sidebarCollapse);
     const setSidebarCollapse = usePDFStore((state) => state.setSidebarCollapse);
@@ -47,10 +49,12 @@ export function Header() {
             return;
         }
 
-        const answer = window.confirm('You have unsaved changes. Do you want to discard them and go back to the home screen?');
-        if (!answer) return;
+        setShowExitConfirm(true);
+    };
 
+    const confirmGoHome = () => {
         closeDocument();
+        setShowExitConfirm(false);
     };
 
     const startEditing = () => {
@@ -151,6 +155,16 @@ export function Header() {
                     </button>
                 )}
             </div>
+
+            <ConfirmationModal
+                isOpen={showExitConfirm}
+                onClose={() => setShowExitConfirm(false)}
+                onConfirm={confirmGoHome}
+                title="Discard Changes?"
+                description="You have unsaved changes. Are you sure you want to discard them and return to the home screen?"
+                confirmLabel="Discard Changes"
+                variant="danger"
+            />
         </header>
     );
 }

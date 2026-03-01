@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { usePDFStore } from '../../store/usePDFStore';
 import type { ToolType } from '../../store/usePDFStore';
 import { defaultTextStyle, availableFonts } from '../../store/usePDFStore';
 import { MousePointer2, Type, Image as ImageIcon, PenTool, Layers, Grid2X2, Bold, Italic, Underline, Highlighter, Pencil, GripVertical, RotateCw, Trash2, Link2, Move, ChevronLeft, FilePlus } from 'lucide-react';
+import { ConfirmationModal } from '../Modal/ConfirmationModal';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -52,6 +53,7 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
     const sidebarCollapse = usePDFStore((state) => state.settings.sidebarCollapse);
     const setSidebarCollapse = usePDFStore((state) => state.setSidebarCollapse);
     const [isSmallWidth, setIsSmallWidth] = useState(false);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -76,10 +78,12 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
             return;
         }
 
-        const answer = window.confirm('You have unsaved changes. Do you want to discard them and go back to the home screen?');
-        if (!answer) return;
+        setShowExitConfirm(true);
+    };
 
+    const confirmGoHome = () => {
         closeDocument();
+        setShowExitConfirm(false);
     };
 
     // Get current font definition for variant support checks
@@ -292,6 +296,15 @@ export function Sidebar({ activePageIndex, onPageSelect }: SidebarProps) {
                     </div>
                 )}
             </div>
+            <ConfirmationModal
+                isOpen={showExitConfirm}
+                onClose={() => setShowExitConfirm(false)}
+                onConfirm={confirmGoHome}
+                title="Discard Changes?"
+                description="You have unsaved changes. Are you sure you want to discard them and return to the home screen?"
+                confirmLabel="Discard Changes"
+                variant="danger"
+            />
         </div>
     );
 }

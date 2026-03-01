@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Layout } from './components/Layout/Layout';
 import { Header } from './components/Header/Header';
 import { Sidebar } from './components/Sidebar/Sidebar';
+import { ConfirmationModal } from './components/Modal/ConfirmationModal';
 import { HomeScreen } from './features/HomeScreen/HomeScreen';
 import { EditorScreen } from './features/EditorScreen/EditorScreen';
 import { usePDFStore } from './store/usePDFStore';
@@ -11,6 +12,8 @@ import { isElectron, getElectronAPI } from './lib/electron';
 function App() {
   const { document, settings, undo, redo, closeDocument } = usePDFStore();
   const [visiblePageIndex, setVisiblePageIndex] = useState(0);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const onQuitConfirmed = useRef<(() => void) | null>(null);
 
   // Reset page index when document changes
   useEffect(() => { setVisiblePageIndex(0); }, [document.originalBytes]);
@@ -42,18 +45,17 @@ function App() {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Z' && e.shiftKey) {
-        e.preventDefault();
-        redo();
-      }
-      // Also support Ctrl+Y for redo
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-        e.preventDefault();
-        redo();
+      if ((e.ctrlKey || e.metaKey)) {
+        if (e.key.toLowerCase() === 'z') {
+          e.preventDefault();
+          if (e.shiftKey) redo(); else undo();
+        } else if (e.key.toLowerCase() === 'y') {
+          e.preventDefault();
+          redo();
+        } else if (e.key.toLowerCase() === 'q') {
+          e.preventDefault();
+          handleQuit();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -112,7 +114,6 @@ function App() {
   // Handle quit events
   useEffect(() => {
     const handleTabClose = (event: BeforeUnloadEvent) => {
-      console.log('handleTabClose triggered');
       const state = usePDFStore.getState();
       if (!state.haveUnsavedChanges()) return;
 
@@ -129,27 +130,30 @@ function App() {
     };
   }, []);
 
+  // Universal Quit Handler
+  const handleQuit = useCallback(() => {
+    const state = usePDFStore.getState();
+    if (!state.haveUnsavedChanges()) {
+      closeDocument();
+      if (isElectron) getElectronAPI().notifyCloseWindow();
+      return;
+    }
+
+    onQuitConfirmed.current = () => {
+      closeDocument();
+      if (isElectron) getElectronAPI().notifyCloseWindow();
+    };
+    setShowQuitConfirm(true);
+  }, [closeDocument]);
+
   // Electron Quit
   useEffect(() => {
     if (!isElectron) return;
     const api = getElectronAPI();
-    const cleanup = api.onCloseRequested(() => {
-      const state = usePDFStore.getState();
-      if (!state.haveUnsavedChanges()) {
-        closeDocument();
-        api.notifyCloseWindow();
-        return;
-      }
-
-      const answer = window.confirm('You have unsaved changes. Do you want to discard them and exit?');
-      if (!answer) return;
-
-      closeDocument();
-      api.notifyCloseWindow();
-    });
+    const cleanup = api.onCloseRequested(handleQuit);
 
     return cleanup;
-  }, []);
+  }, [handleQuit]);
 
   return (
     <Layout>
@@ -165,8 +169,36 @@ function App() {
             <HomeScreen />
           )}
         </div>
+        <GlobalModals
+          showQuitConfirm={showQuitConfirm}
+          setShowQuitConfirm={setShowQuitConfirm}
+          onQuitConfirmed={onQuitConfirmed}
+        />
       </div>
     </Layout>
+  );
+}
+
+function GlobalModals({ showQuitConfirm, setShowQuitConfirm, onQuitConfirmed }: {
+  showQuitConfirm: boolean,
+  setShowQuitConfirm: (v: boolean) => void,
+  onQuitConfirmed: React.RefObject<(() => void) | null>
+}) {
+  return (
+    <ConfirmationModal
+      isOpen={showQuitConfirm}
+      onClose={() => setShowQuitConfirm(false)}
+      onConfirm={() => {
+        if (onQuitConfirmed.current) onQuitConfirmed.current();
+        setShowQuitConfirm(false);
+      }}
+      title={isElectron ? "Discard Changes & Exit?" : "Discard Changes & Close?"}
+      description={isElectron
+        ? "You have unsaved changes. Are you sure you want to discard them and exit the application?"
+        : "You have unsaved changes. Are you sure you want to discard them and close the current document?"}
+      confirmLabel={isElectron ? "Exit Anyway" : "Discard & Close"}
+      variant="danger"
+    />
   );
 }
 

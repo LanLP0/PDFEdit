@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { usePDFStore } from '../../store/usePDFStore';
 import { PdfViewer } from './PdfViewer';
-import { SignatureModal } from '../Annotations/SignatureModal';
+import { SignatureModal } from '../Annotations/SignatureModal'; import { ConfirmationModal } from '../../components/Modal/ConfirmationModal';
 import { ChevronLeft, ChevronRight, RotateCw, Trash2, FilePlus, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface EditorScreenProps {
@@ -17,7 +17,7 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
     const pageRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const [pageInput, setPageInput] = useState('');
     const [zoomInput, setZoomInput] = useState(String(settings.zoom));
-    // Track whether the index change came from scrolling or from external (e.g. sidebar)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const closestIdx = useRef(0);
 
     const order = document.modifications.pageOrder;
@@ -58,8 +58,12 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
     const handleRotate = () => { if (currentPageId) rotatePage(currentPageId, 90); };
     const handleDeletePage = () => {
         if (!currentPageId || totalPages <= 1) return;
-        if (!confirm(`Delete page ${visiblePageIndex + 1}?`)) return;
-        deletePage(currentPageId);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDeletePage = () => {
+        if (currentPageId) deletePage(currentPageId);
+        setShowDeleteConfirm(false);
     };
 
     const handlePageInputSubmit = () => {
@@ -127,6 +131,16 @@ export function EditorScreen({ visiblePageIndex, setVisiblePageIndex }: EditorSc
             </div>
 
             <SignatureModal pageId={currentPageId} />
+
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDeletePage}
+                title={`Delete Page ${visiblePageIndex + 1}?`}
+                description="Are you sure you want to delete this page? This action cannot be undone."
+                confirmLabel="Delete Page"
+                variant="danger"
+            />
         </div>
     );
 }

@@ -1,8 +1,9 @@
-import React, { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo } from 'react';
+import Modal from 'react-modal';
 import { usePDFStore } from '../../store/usePDFStore';
 import type { Annotation, StrokePoint, LinkPayload } from '../../store/usePDFStore';
 import { defaultTextStyle, availableFonts } from '../../store/usePDFStore';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Link2 } from 'lucide-react';
 
 interface AnnotationOverlayProps {
     pageId: string;
@@ -236,16 +237,27 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
             ))}
 
             {/* Link Dialog */}
-            {showLinkDialog && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowLinkDialog(false)}>
-                    <div className="bg-(--color-bg-panel) rounded-xl shadow-xl border border-(--color-border) p-5 w-80 space-y-3" onClick={(e) => e.stopPropagation()}>
+            <Modal
+                isOpen={showLinkDialog}
+                onRequestClose={() => setShowLinkDialog(false)}
+                contentLabel="Add URL Link"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-(--color-bg-panel) rounded-xl shadow-xl border border-(--color-border) p-5 w-80 outline-none"
+                overlayClassName="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+                closeTimeoutMS={200}
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Link2 className="text-primary" size={18} />
                         <h3 className="text-sm font-semibold text-(--color-text-main)">Add URL Link</h3>
+                    </div>
+
+                    <div className="space-y-3">
                         <div>
-                            <label className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">Display Text</label>
+                            <label className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1.5 ml-1">Display Text</label>
                             <input
                                 type="text"
                                 autoFocus
-                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) text-sm outline-none focus:border-primary"
+                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) text-sm outline-none focus:border-primary transition-all"
                                 placeholder="Click here"
                                 value={linkText}
                                 onChange={(e) => setLinkText(e.target.value)}
@@ -253,24 +265,35 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
                             />
                         </div>
                         <div>
-                            <label className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1">URL</label>
+                            <label className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted) block mb-1.5 ml-1">URL</label>
                             <input
                                 type="url"
-                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) text-sm outline-none focus:border-primary"
+                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-bg-app) text-(--color-text-main) text-sm outline-none focus:border-primary transition-all"
                                 placeholder="https://example.com"
                                 value={linkUrl}
                                 onChange={(e) => setLinkUrl(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleInsertLink(); }}
                             />
                         </div>
-                        <div className="flex justify-end gap-2 pt-1">
-                            <button className="px-3 py-1.5 text-sm rounded-lg border border-(--color-border) text-(--color-text-muted) hover:bg-(--color-bg-hover)" onClick={() => setShowLinkDialog(false)}>Cancel</button>
-                            <button className="px-3 py-1.5 text-sm rounded-lg bg-primary text-white font-medium hover:opacity-90 disabled:opacity-50"
-                                onClick={handleInsertLink} disabled={!linkText.trim() || !linkUrl.trim()}>Insert</button>
-                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button
+                            className="px-4 py-2 text-sm font-medium rounded-lg border border-(--color-border) text-(--color-text-muted) hover:bg-(--color-bg-hover) transition-all"
+                            onClick={() => setShowLinkDialog(false)}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
+                            onClick={handleInsertLink}
+                            disabled={!linkText.trim() || !linkUrl.trim()}
+                        >
+                            Insert
+                        </button>
                     </div>
                 </div>
-            )}
+            </Modal>
         </div>
     );
 }

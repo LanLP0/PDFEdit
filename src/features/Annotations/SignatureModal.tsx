@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import Modal from 'react-modal';
 import { usePDFStore } from '../../store/usePDFStore';
 import { X, Check } from 'lucide-react';
 
@@ -23,9 +24,7 @@ export function SignatureModal({ pageId }: SignatureModalProps) {
                 ctx.lineJoin = 'round';
             }
         }
-    }, [settings.activeTool]);
-
-    if (settings.activeTool !== 'signature' || !pageId) return null;
+    }, [settings.activeTool, canvasRef.current]);
 
     const handleClose = () => {
         setActiveTool('pointer');
@@ -92,69 +91,75 @@ export function SignatureModal({ pageId }: SignatureModalProps) {
 
         const dataUrl = tempCanvas.toDataURL('image/png');
 
-        addAnnotation(pageId, {
-            id: crypto.randomUUID(),
-            type: 'image',
-            x: 50,
-            y: 50,
-            width: 40,
-            payload: dataUrl
-        });
+        if (pageId) {
+            addAnnotation(pageId, {
+                id: crypto.randomUUID(),
+                type: 'image',
+                x: 50,
+                y: 50,
+                width: 40,
+                payload: dataUrl
+            });
+        }
 
         handleClose();
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-(--color-bg-panel) rounded-xl shadow-(--shadow-floating) max-w-xl w-full p-6 mx-4 relative">
+        <Modal
+            isOpen={settings.activeTool === 'signature' && !!pageId}
+            onRequestClose={handleClose}
+            contentLabel="Draw Your Signature"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-(--color-bg-panel) rounded-xl shadow-(--shadow-floating) max-w-xl w-full p-6 outline-none"
+            overlayClassName="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            closeTimeoutMS={200}
+        >
+            <button
+                onClick={handleClose}
+                className="absolute top-4 right-4 text-(--color-text-muted) hover:text-(--color-text-main) transition-colors"
+            >
+                <X size={24} />
+            </button>
+
+            <h2 className="text-xl font-semibold text-(--color-text-main) mb-2">Draw Your Signature</h2>
+            <p className="text-sm text-(--color-text-muted) mb-6">Use your mouse or finger to sign.</p>
+
+            <div className="border-2 border-dashed border-(--color-border-hover) rounded-lg bg-white overflow-hidden mb-6">
+                <canvas
+                    ref={canvasRef}
+                    width={500}
+                    height={200}
+                    className="w-full h-[200px] touch-none cursor-crosshair"
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={stopDrawing}
+                    onMouseLeave={stopDrawing}
+                    onTouchStart={startDrawing}
+                    onTouchMove={draw}
+                    onTouchEnd={stopDrawing}
+                />
+            </div>
+
+            <div className="flex justify-between items-center">
                 <button
-                    onClick={handleClose}
-                    className="absolute top-4 right-4 text-(--color-text-muted) hover:text-(--color-text-main)"
+                    className="text-(--color-text-muted) hover:text-red-500 font-medium transition-colors"
+                    onClick={handleClear}
                 >
-                    <X size={24} />
+                    Clear Signature
                 </button>
 
-                <h2 className="text-xl font-semibold text-(--color-text-main) mb-2">Draw Your Signature</h2>
-                <p className="text-sm text-(--color-text-muted) mb-6">Use your mouse or finger to sign.</p>
-
-                <div className="border-2 border-dashed border-(--color-border-hover) rounded-lg bg-white overflow-hidden mb-6">
-                    <canvas
-                        ref={canvasRef}
-                        width={500}
-                        height={200}
-                        className="w-full h-[200px] touch-none cursor-crosshair"
-                        onMouseDown={startDrawing}
-                        onMouseMove={draw}
-                        onMouseUp={stopDrawing}
-                        onMouseLeave={stopDrawing}
-                        onTouchStart={startDrawing}
-                        onTouchMove={draw}
-                        onTouchEnd={stopDrawing}
-                    />
-                </div>
-
-                <div className="flex justify-between items-center">
+                <div className="flex gap-3">
+                    <button className="px-4 py-2 text-sm font-medium rounded-lg border border-(--color-border) text-(--color-text-muted) hover:bg-(--color-bg-hover)" onClick={handleClose}>Cancel</button>
                     <button
-                        className="text-(--color-text-muted) hover:text-red-500 font-medium transition-colors"
-                        onClick={handleClear}
+                        className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white flex items-center gap-2 hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
+                        onClick={handleSave}
+                        disabled={!hasDrawn}
                     >
-                        Clear Signature
+                        <Check size={18} />
+                        Insert Signature
                     </button>
-
-                    <div className="flex gap-3">
-                        <button className="btn-secondary" onClick={handleClose}>Cancel</button>
-                        <button
-                            className="btn-primary flex items-center gap-2"
-                            onClick={handleSave}
-                            disabled={!hasDrawn}
-                            style={{ opacity: hasDrawn ? 1 : 0.5 }}
-                        >
-                            <Check size={18} />
-                            Insert Signature
-                        </button>
-                    </div>
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 }
