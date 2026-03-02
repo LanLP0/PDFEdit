@@ -2,11 +2,10 @@ import React, { useRef, useState, useEffect } from 'react';
 import { UploadCloud, FileText, Clock, File, Trash2, ALargeSmall, ArrowUpNarrowWide, ArrowDownNarrowWide, Github, Star } from 'lucide-react';
 import { getRecentFiles, onRecentFilesUpdated, removeRecentFile } from '../../lib/recentFiles';
 import type { RecentFileEntry } from '../../lib/recentFiles';
-import { openFile, applyLoadedPdf } from '../../lib/openFile';
+import { openFile, openFilePath, applyLoadedPdf } from '../../lib/openFile';
 
 export function HomeScreen() {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const recentInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [recentFiles, setRecentFiles] = useState<RecentFileEntry[]>([]);
     const [sortType, setSortType] = useState<'name' | 'date'>('date');
@@ -43,8 +42,20 @@ export function HomeScreen() {
             }
         } catch (err: any) {
             console.error('Failed to open file', err);
-            // We could bubble this up to App's ErrorModal, but for now console is enough 
-            // since App also catches drops.
+        }
+    };
+
+    const handleRecentClick = async (recent: RecentFileEntry) => {
+        if (recent.locationType === 'FileSystem' && recent.location) {
+            try {
+                const pdf = await openFilePath(recent.location);
+                if (pdf) await applyLoadedPdf(pdf);
+            } catch (err) {
+                console.error('Failed to reopen file', err);
+            }
+        } else {
+            // Web files can't be reopened — prompt a file picker
+            fileInputRef.current?.click();
         }
     };
 
@@ -111,9 +122,6 @@ export function HomeScreen() {
                 <input type="file" accept="application/pdf" className="hidden" ref={fileInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} />
             </div>
 
-            {/* Hidden input for recent file re-opens */}
-            <input type="file" accept="application/pdf" className="hidden" ref={recentInputRef} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }} />
-
             {/* Recent Files Grid */}
             <div className="max-w-4xl w-full">
                 <div className="flex items-center gap-2 mb-6 text-(--color-text-main)">
@@ -150,8 +158,8 @@ export function HomeScreen() {
                             <div
                                 key={recent.id}
                                 className="bg-(--color-bg-panel) rounded-xl p-5 border border-(--color-border) shadow-sm hover:shadow-md hover:border-primary transition-all cursor-pointer flex flex-col group/card relative"
-                                onClick={() => recentInputRef.current?.click()}
-                                title={`Click to re-open ${recent.name}`}
+                                onClick={() => handleRecentClick(recent)}
+                                title={recent.locationType === 'FileSystem' ? `Click to re-open ${recent.name}` : 'File not available — click to browse for a file'}
                             >
                                 {/* Delete button: top-right corner */}
                                 <button
@@ -165,7 +173,10 @@ export function HomeScreen() {
                                     <File size={24} />
                                 </div>
                                 <h3 className="font-semibold text-(--color-text-main) mb-1 truncate" title={recent.name}>{recent.name}</h3>
-                                <p className="text-xs text-(--color-text-muted) mb-1">{recent.pageCount} pages</p>
+                                <p className="text-xs text-(--color-text-muted) mb-1">
+                                    {recent.pageCount} pages
+                                    {recent.locationType === 'Web' && <span className="ml-2 italic text-amber-500">• File not available</span>}
+                                </p>
                                 <div className="flex justify-between items-center text-sm text-(--color-text-muted) mt-auto pt-4 border-t border-(--color-border)">
                                     <span>{formatDate(recent.lastOpened)}</span>
                                     <span>{formatSize(recent.size)}</span>

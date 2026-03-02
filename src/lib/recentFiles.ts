@@ -5,12 +5,16 @@ import { recentFilesSynced } from './PersistentStorage';
 
 export const MAX_RECENT_FILES = 100;
 
+export type LocationType = 'Web' | 'FileSystem';
+
 export interface RecentFileEntry {
     id: string;
     name: string;
     size: number;
     lastOpened: number; // timestamp
     pageCount: number;
+    locationType: LocationType;
+    location: string | null;
 }
 
 // TODO WARN Currently this logic rely a lot on constantly syncing

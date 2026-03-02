@@ -61,6 +61,8 @@ export async function applyLoadedPdf(pdf: LoadedPdf) {
         size: pdf.size,
         lastOpened: Date.now(),
         pageCount: pdf.pages.length,
+        locationType: pdf.path ? 'FileSystem' : 'Web',
+        location: pdf.path ?? null,
     };
     await addRecentFile(entry);
 }
