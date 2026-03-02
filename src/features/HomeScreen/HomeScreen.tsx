@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { UploadCloud, FileText, Clock, File, Trash2, ALargeSmall, ArrowUpNarrowWide, ArrowDownNarrowWide } from 'lucide-react';
-import { getRecentFiles, removeRecentFile } from '../../lib/recentFiles';
+import { UploadCloud, FileText, Clock, File, Trash2, ALargeSmall, ArrowUpNarrowWide, ArrowDownNarrowWide, Github, Star } from 'lucide-react';
+import { getRecentFiles, onRecentFilesUpdated, removeRecentFile } from '../../lib/recentFiles';
 import type { RecentFileEntry } from '../../lib/recentFiles';
 import { openFile, applyLoadedPdf } from '../../lib/openFile';
 
@@ -17,6 +17,7 @@ export function HomeScreen() {
             try {
                 const files = await getRecentFiles();
                 setRecentFiles(files);
+                return onRecentFilesUpdated((f) => setRecentFiles(f));
             } catch (e) {
                 console.error('Failed to load recent files', e);
             }
@@ -51,7 +52,6 @@ export function HomeScreen() {
         e.stopPropagation();
         try {
             await removeRecentFile(id);
-            setRecentFiles(prev => prev.filter(f => f.id !== id));
         } catch (err) {
             console.error('Failed to remove recent file', err);
         }
@@ -175,6 +175,18 @@ export function HomeScreen() {
                     </div>
                 )}
             </div>
+
+            <a
+                href="https://github.com/LanLP0/PDFEdit"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden lg:flex fixed bottom-6 right-6 items-center gap-2 px-4 py-2.5 rounded-xl bg-(--color-bg-panel) border border-(--color-border) shadow-sm hover:shadow-md hover:border-yellow-300 text-(--color-text-muted) hover:text-yellow-300 transition-all z-50"
+            >
+                <span className="text-sm font-medium">Give a</span>
+                <Star size={16} className='text-yellow-300' />
+                <span className="text-sm font-medium">on GitHub</span>
+                <Github size={18} />
+            </a>
         </div>
     );
 }

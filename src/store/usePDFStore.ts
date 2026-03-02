@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { themeSynced } from '../lib/PersistentStorage';
 
 // The Move tool is a dummy tool used to activate the touchmove block for mobile users. Other tools function in the editor as expected.
 export type ToolType = 'pointer' | 'text' | 'image' | 'signature' | 'highlight' | 'draw' | 'link' | 'move';
@@ -157,7 +158,7 @@ const initialDocumentState: DocumentState = {
 };
 
 const initialSettings: AppSettings = {
-  theme: 'adaptive',
+  theme: themeSynced.get(),
   sidebarMode: 'tools',
   activeTool: 'pointer',
   currentTextStyle: { ...defaultTextStyle },
@@ -257,7 +258,7 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
   },
 
   // --- Settings (no undo tracking) ---
-  setTheme: (theme) => set((state) => ({ settings: { ...state.settings, theme } })),
+  setTheme: (theme) => { if (theme === get().settings.theme) return; themeSynced.set(theme); set((state) => ({ settings: { ...state.settings, theme } })); },
   setSidebarMode: (sidebarMode) => set((state) => ({ settings: { ...state.settings, sidebarMode } })),
   setActiveTool: (activeTool) => set((state) => ({ settings: { ...state.settings, activeTool } })),
   setCurrentTextStyle: (style) => set((state) => ({

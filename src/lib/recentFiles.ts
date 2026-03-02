@@ -1,7 +1,9 @@
-// IndexedDB wrapper for storing recent file metadata
-const DB_NAME = 'pdfedit_db';
-const DB_VERSION = 1;
-const STORE_NAME = 'recent_files';
+/**
+ * Recent files — backed by PersistentStorage (localStorage + cross-tab sync).
+ */
+import { recentFilesSynced } from './PersistentStorage';
+
+export const MAX_RECENT_FILES = 100;
 
 export interface RecentFileEntry {
     id: string;
@@ -11,59 +13,34 @@ export interface RecentFileEntry {
     pageCount: number;
 }
 
-function openDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                store.createIndex('lastOpened', 'lastOpened', { unique: false });
-            }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
+// TODO WARN Currently this logic rely a lot on constantly syncing
+// For local browser storage, this is not a problem
+// For remote storage, this might became a problem
 
 export async function addRecentFile(entry: RecentFileEntry): Promise<void> {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).put(entry);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
+    recentFilesSynced.sync();
+    const current = recentFilesSynced.get();
+    const idx = current.findIndex(f => f.id === entry.id);
+    if (idx >= 0) {
+        const updated = [...current];
+        updated[idx] = entry;
+        recentFilesSynced.set(updated);
+    } else {
+        recentFilesSynced.set([entry, ...current].slice(0, MAX_RECENT_FILES));
+    }
+    recentFilesSynced.sync();
 }
 
 export async function getRecentFiles(): Promise<RecentFileEntry[]> {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const store = tx.objectStore(STORE_NAME);
-        const index = store.index('lastOpened');
-        const request = index.openCursor(null, 'prev'); // newest first
-        const results: RecentFileEntry[] = [];
-
-        request.onsuccess = () => {
-            const cursor = request.result;
-            if (cursor && results.length < 12) {
-                results.push(cursor.value as RecentFileEntry);
-                cursor.continue();
-            } else {
-                resolve(results);
-            }
-        };
-        request.onerror = () => reject(request.error);
-    });
+    return recentFilesSynced.get();
 }
 
 export async function removeRecentFile(id: string): Promise<void> {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).delete(id);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
+    recentFilesSynced.sync();
+    recentFilesSynced.set(recentFilesSynced.get().filter(f => f.id !== id));
+    recentFilesSynced.sync();
+}
+
+export function onRecentFilesUpdated(callback: (files: RecentFileEntry[]) => void): () => void {
+    return recentFilesSynced.subscribe(callback);
 }

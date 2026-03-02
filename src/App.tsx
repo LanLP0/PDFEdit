@@ -11,6 +11,7 @@ import type { LoadedPdf } from './lib/openFile';
 import { isElectron, getElectronAPI } from './lib/electron';
 import { FileConflictModal } from './components/Modal/FileConflictModal';
 import { ErrorModal } from './components/Modal/ErrorModal';
+import { themeSynced, storageManager } from './lib/PersistentStorage';
 
 function App() {
   const { document, settings, undo, redo, closeDocument } = usePDFStore();
@@ -45,6 +46,15 @@ function App() {
     mediaQuery.addEventListener('change', listener);
     return () => mediaQuery.removeEventListener('change', listener);
   }, [settings.theme]);
+
+  // Cross-tab sync: theme & recent files
+  useEffect(() => {
+    storageManager.sync(); // initial hydration
+    const unsubTheme = themeSynced.subscribe((theme) => {
+      usePDFStore.getState().setTheme(theme);
+    });
+    return () => unsubTheme();
+  }, []);
 
   // Global keyboard shortcuts: Ctrl+Z (undo), Ctrl+Shift+Z (redo)
   useEffect(() => {
