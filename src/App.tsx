@@ -6,14 +6,22 @@ import { ConfirmationModal } from './components/Modal/ConfirmationModal';
 import { HomeScreen } from './features/HomeScreen/HomeScreen';
 import { EditorScreen } from './features/EditorScreen/EditorScreen';
 import { usePDFStore } from './store/usePDFStore';
-import { openFile, openFilePath } from './lib/openFile';
+import { openFile, openFilePath, applyLoadedPdf, hasModifications, openFilePayload } from './lib/openFile';
+import type { LoadedPdf } from './lib/openFile';
 import { isElectron, getElectronAPI } from './lib/electron';
+import { FileConflictModal } from './components/Modal/FileConflictModal';
+import { ErrorModal } from './components/Modal/ErrorModal';
 
 function App() {
   const { document, settings, undo, redo, closeDocument } = usePDFStore();
   const [visiblePageIndex, setVisiblePageIndex] = useState(0);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const onQuitConfirmed = useRef<(() => void) | null>(null);
+
+  // File handling state
+  const [incomingFile, setIncomingFile] = useState<LoadedPdf | null>(null);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<{ title: string; message: string } | null>(null);
 
   // Reset page index when document changes
   useEffect(() => { setVisiblePageIndex(0); }, [document.originalBytes]);
@@ -103,11 +111,26 @@ function App() {
     e.dataTransfer.dropEffect = 'copy';
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
-      openFile(file);
+    if (file) {
+      try {
+        const pdf = await openFile(file);
+        if (!pdf) return;
+
+        if (hasModifications()) {
+          setIncomingFile(pdf);
+          setShowConflictModal(true);
+        } else {
+          await applyLoadedPdf(pdf);
+        }
+      } catch (err: any) {
+        setErrorDetails({
+          title: "Failed to Open File",
+          message: err.message || "An error occurred while loading the PDF."
+        });
+      }
     }
   }, []);
 
@@ -129,6 +152,84 @@ function App() {
       window.removeEventListener('beforeunload', handleTabClose);
     };
   }, []);
+
+  // Desktop File Handler Integration
+  useEffect(() => {
+    if (!isElectron) return;
+    const api = getElectronAPI();
+
+    const cleanup1 = api.onOpenFile(async (filePath) => {
+      try {
+        const pdf = await openFilePath(filePath);
+        if (!pdf) return;
+
+        if (hasModifications()) {
+          setIncomingFile(pdf);
+          setShowConflictModal(true);
+        } else {
+          await applyLoadedPdf(pdf);
+        }
+      } catch (err: any) {
+        setErrorDetails({
+          title: "Failed to Open File",
+          message: err.message || "An error occurred while loading the PDF."
+        });
+      }
+    });
+
+    const cleanup2 = api.onOpenFilePayload?.(async (data) => {
+      try {
+        const pdf = await openFilePayload(data);
+        if (!pdf) return;
+
+        if (hasModifications()) {
+          setIncomingFile(pdf);
+          setShowConflictModal(true);
+        } else {
+          await applyLoadedPdf(pdf);
+        }
+      } catch (err: any) {
+        setErrorDetails({
+          title: "Failed to Open Payload",
+          message: err.message || "An error occurred while loading the PDF data."
+        });
+      }
+    });
+
+    return () => {
+      cleanup1();
+      cleanup2?.();
+    };
+  }, []);
+
+  const handleDiscardAndOpen = useCallback(async () => {
+    if (incomingFile) {
+      await applyLoadedPdf(incomingFile);
+      setIncomingFile(null);
+      setShowConflictModal(false);
+    }
+  }, [incomingFile]);
+
+  const handleOpenInNewWindow = useCallback(() => {
+    if (incomingFile && isElectron) {
+      // Enforce 50MB limit for direct bytes transfer if no path is available
+      if (!incomingFile.path && incomingFile.buffer.byteLength > 50 * 1024 * 1024) {
+        setErrorDetails({
+          title: "File Too Large",
+          message: "The file is too large (over 50MB) to be opened this way. Please save it locally first."
+        });
+        return;
+      }
+
+      getElectronAPI().openInNewWindow({
+        path: incomingFile.path,
+        bytes: new Uint8Array(incomingFile.buffer),
+        name: incomingFile.name
+      });
+      setIncomingFile(null);
+      setShowConflictModal(false);
+    }
+  }, [incomingFile]);
 
   // Universal Quit Handler
   const handleQuit = useCallback(() => {
@@ -173,32 +274,74 @@ function App() {
           showQuitConfirm={showQuitConfirm}
           setShowQuitConfirm={setShowQuitConfirm}
           onQuitConfirmed={onQuitConfirmed}
+          incomingFile={incomingFile}
+          showConflictModal={showConflictModal}
+          setShowConflictModal={setShowConflictModal}
+          handleDiscardAndOpen={handleDiscardAndOpen}
+          handleOpenInNewWindow={handleOpenInNewWindow}
+          errorDetails={errorDetails}
+          setErrorDetails={setErrorDetails}
         />
       </div>
     </Layout>
   );
 }
 
-function GlobalModals({ showQuitConfirm, setShowQuitConfirm, onQuitConfirmed }: {
+function GlobalModals({
+  showQuitConfirm,
+  setShowQuitConfirm,
+  onQuitConfirmed,
+  incomingFile,
+  showConflictModal,
+  setShowConflictModal,
+  handleDiscardAndOpen,
+  handleOpenInNewWindow,
+  errorDetails,
+  setErrorDetails
+}: {
   showQuitConfirm: boolean,
   setShowQuitConfirm: (v: boolean) => void,
-  onQuitConfirmed: React.RefObject<(() => void) | null>
+  onQuitConfirmed: React.RefObject<(() => void) | null>,
+  incomingFile: LoadedPdf | null,
+  showConflictModal: boolean,
+  setShowConflictModal: (v: boolean) => void,
+  handleDiscardAndOpen: () => void,
+  handleOpenInNewWindow: () => void,
+  errorDetails: { title: string; message: string } | null,
+  setErrorDetails: (v: { title: string; message: string } | null) => void
 }) {
   return (
-    <ConfirmationModal
-      isOpen={showQuitConfirm}
-      onClose={() => setShowQuitConfirm(false)}
-      onConfirm={() => {
-        if (onQuitConfirmed.current) onQuitConfirmed.current();
-        setShowQuitConfirm(false);
-      }}
-      title={isElectron ? "Discard Changes & Exit?" : "Discard Changes & Close?"}
-      description={isElectron
-        ? "You have unsaved changes. Are you sure you want to discard them and exit the application?"
-        : "You have unsaved changes. Are you sure you want to discard them and close the current document?"}
-      confirmLabel={isElectron ? "Exit Anyway" : "Discard & Close"}
-      variant="danger"
-    />
+    <>
+      <ConfirmationModal
+        isOpen={showQuitConfirm}
+        onClose={() => setShowQuitConfirm(false)}
+        onConfirm={() => {
+          if (onQuitConfirmed.current) onQuitConfirmed.current();
+          setShowQuitConfirm(false);
+        }}
+        title={isElectron ? "Discard Changes & Exit?" : "Discard Changes & Close?"}
+        description={isElectron
+          ? "You have unsaved changes. Are you sure you want to discard them and exit the application?"
+          : "You have unsaved changes. Are you sure you want to discard them and close the current document?"}
+        confirmLabel={isElectron ? "Exit Anyway" : "Discard & Close"}
+        variant="danger"
+      />
+
+      <FileConflictModal
+        isOpen={showConflictModal}
+        onClose={() => setShowConflictModal(false)}
+        onDiscardAndOpen={handleDiscardAndOpen}
+        onOpenInNewWindow={handleOpenInNewWindow}
+        fileName={incomingFile?.name || "the document"}
+      />
+
+      <ErrorModal
+        isOpen={!!errorDetails}
+        onClose={() => setErrorDetails(null)}
+        title={errorDetails?.title || "Error"}
+        message={errorDetails?.message || "An unexpected error occurred."}
+      />
+    </>
   );
 }
 

@@ -10,9 +10,9 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    icon: './src/assets/icon'
+    icon: './src/assets/icon',
+    extendInfo: "./src/assets/info.plist"
   },
-  rebuildConfig: {},
   makers: [
     new MakerSquirrel(),
     new MakerZIP({}, ['darwin', 'linux', 'win32']),

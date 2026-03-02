@@ -16,89 +16,110 @@ export function hasModifications(): boolean {
     );
 }
 
+export interface LoadedPdf {
+    name: string;
+    size: number;
+    buffer: ArrayBuffer;
+    pages: string[];
+    path?: string;
+}
+
 /**
- * Load a PDF from an ArrayBuffer. Internal helper shared by openFile and openFilePath.
+ * Load a PDF from an ArrayBuffer. Internal helper shared by processes.
+ * Returns the structured PDF data for the caller to decide when to apply it to the store.
  */
-async function loadPdfBuffer(name: string, size: number, buffer: ArrayBuffer): Promise<void> {
-    console.log('Loading PDF:', name);
+export async function preparePdfBuffer(name: string, size: number, buffer: ArrayBuffer, filePath?: string): Promise<LoadedPdf> {
     const { PDFDocument } = await import('pdf-lib');
-    const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false });
-    const numPages = pdfDoc.getPageCount();
-    const initialPages = Array.from({ length: numPages }, (_, i) => `page-${i + 1}`);
+    try {
+        const pdfDoc = await PDFDocument.load(buffer, { updateMetadata: false });
+        const numPages = pdfDoc.getPageCount();
+        const initialPages = Array.from({ length: numPages }, (_, i) => `page-${i + 1}`);
 
-    const state = usePDFStore.getState();
-    const hasDoc = !!state.document.originalBytes;
-
-    if (hasDoc && hasModifications()) {
-        const action = window.confirm(
-            'You have unsaved changes. Click OK to discard and open the new file, or Cancel to abort.',
-        );
-        if (!action) return;
+        return {
+            name,
+            size,
+            buffer,
+            pages: initialPages,
+            path: filePath
+        };
+    } catch (e) {
+        console.error('pdf-lib load failed:', e);
+        throw new Error('The file appears to be an invalid or corrupted PDF.');
     }
+}
 
-    state.loadDocument({ name, size } as File, buffer, initialPages);
+/**
+ * Apply a prepared PDF to the global store and recent files list.
+ */
+export async function applyLoadedPdf(pdf: LoadedPdf) {
+    const state = usePDFStore.getState();
+    state.loadDocument({ name: pdf.name, size: pdf.size } as File, pdf.buffer, pdf.pages);
 
     const entry: RecentFileEntry = {
-        id: `${name}-${size}`,
-        name,
-        size,
+        id: `${pdf.name}-${pdf.size}`,
+        name: pdf.name,
+        size: pdf.size,
         lastOpened: Date.now(),
-        pageCount: numPages,
+        pageCount: pdf.pages.length,
     };
     await addRecentFile(entry);
 }
 
 /**
  * Common file-open handler for the web renderer (File object from <input> or drag-drop).
- * Opens the PDF in the current tab if no document is loaded or the current document
- * has no modifications. Otherwise prompts the user to discard changes.
  */
-export async function openFile(file: File): Promise<void> {
-    if (file.type !== 'application/pdf') {
-        alert('Please select a valid PDF file.');
-        return;
+export async function openFile(file: File): Promise<LoadedPdf | null> {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        throw new Error('Please select a valid PDF file.');
     }
 
-    try {
-        const buffer = await file.arrayBuffer();
-        await loadPdfBuffer(file.name, file.size, buffer);
-    } catch (e) {
-        console.error('Failed to open file', e);
-        alert('Error loading PDF.');
-    }
+    const buffer = await file.arrayBuffer();
+    return await preparePdfBuffer(file.name, file.size, buffer);
 }
 
 /**
  * Opens a PDF by native file system path (Electron only).
- * Uses the Electron preload API to read the file, then invokes the common load flow.
  */
-export async function openFilePath(filePath: string): Promise<void> {
-    if (!isElectron) {
-        console.warn('openFilePath called outside of Electron – ignoring.');
-        return;
-    }
+export async function openFilePath(filePath: string): Promise<LoadedPdf | null> {
+    if (!isElectron) return null;
 
-    try {
-        const api = getElectronAPI();
-        const buffer = await api.readFile(filePath);
-        const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
-        await loadPdfBuffer(fileName, buffer.byteLength, buffer);
-    } catch (e) {
-        console.error('Failed to open file from path', e);
-        alert('Error loading PDF.');
-    }
+    const api = getElectronAPI();
+    const buffer = await api.readFile(filePath);
+    const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
+    return await preparePdfBuffer(fileName, buffer.byteLength, buffer, filePath);
 }
 
 /**
- * Trigger the Electron native file picker to let the user choose a PDF.
- * Falls back to a no-op in the browser context.
+ * Handle complex file payouts (bytes + name + path).
  */
-export async function openFileWithDialog(): Promise<void> {
-    if (!isElectron) return;
+export async function openFilePayload(data: { name: string, bytes?: Uint8Array, path?: string }): Promise<LoadedPdf | null> {
+    if (data.bytes) {
+        // Ensure we have a strictly ArrayBuffer (not SharedArrayBuffer) for pdf-lib
+        let buffer: ArrayBuffer;
+        if (data.bytes.buffer instanceof ArrayBuffer) {
+            buffer = data.bytes.buffer;
+        } else {
+            // It's a SharedArrayBuffer or similar ArrayBufferLike
+            buffer = new ArrayBuffer(data.bytes.byteLength);
+            new Uint8Array(buffer).set(data.bytes);
+        }
+        return await preparePdfBuffer(data.name, data.bytes.byteLength, buffer, data.path);
+    } else if (data.path) {
+        return await openFilePath(data.path);
+    }
+    return null;
+}
+
+/**
+ * Trigger the Electron native file picker.
+ */
+export async function openFileWithDialog(): Promise<LoadedPdf | null> {
+    if (!isElectron) return null;
 
     const api = getElectronAPI();
     const filePath = await api.openFileDialog();
     if (filePath) {
-        await openFilePath(filePath);
+        return await openFilePath(filePath);
     }
+    return null;
 }

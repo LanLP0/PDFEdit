@@ -6,13 +6,21 @@
   "version": "0.0.0",
   "license": "GPL-3.0-only",
   "main": ".vite/build/main.js",
+  "build": {
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "PDF File",
+        "role": "Editor"
+      }
+    ]
+  },
   "scripts": {
     "dev": "vite",
-    "dev:electron": "electron .",
+    "dev:electron": "cross-env ELECTRON=1 electron-forge start",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "cross-env ELECTRON=1 electron-forge start",
     "pack": "npm run package",
     "package": "cross-env ELECTRON=1 electron-forge package",
     "make": "cross-env ELECTRON=1 electron-forge make"

@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+export type FileOpenData = {
+    path?: string;
+    bytes?: Uint8Array;
+    name: string;
+};
+
 export type ElectronAPI = {
     /** Opens the native OS file picker and returns the chosen file path, or null if cancelled. */
     openFileDialog: () => Promise<string | null>;
@@ -13,10 +19,14 @@ export type ElectronAPI = {
     platform: NodeJS.Platform;
     /** Register a listener for files opened via File > Open menu or macOS Dock. */
     onOpenFile: (callback: (filePath: string) => void) => () => void;
+    /** Register a listener for complex file payloads. */
+    onOpenFilePayload: (callback: (data: FileOpenData) => void) => () => void;
     /** Register a listener for close check. */
     onCloseRequested: (callback: () => void) => () => void;
     /** Notify close check. */
     notifyCloseWindow: () => void;
+    /** Open a file in a new window. */
+    openInNewWindow: (data: FileOpenData) => void;
 };
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -43,11 +53,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onOpenFile: (callback: (filePath: string) => void) => {
         const handler = (_event: Electron.IpcRendererEvent, filePath: string) => callback(filePath);
         ipcRenderer.on('open-file', handler);
-        // Return a cleanup function
         return () => ipcRenderer.removeListener('open-file', handler);
+    },
+    onOpenFilePayload: (callback: (data: FileOpenData) => void) => {
+        const handler = (_event: Electron.IpcRendererEvent, data: FileOpenData) => callback(data);
+        ipcRenderer.on('open-file-payload', handler);
+        return () => ipcRenderer.removeListener('open-file-payload', handler);
     },
 
     // Close check ipc handle between main and renderer
     onCloseRequested: (callback: () => void) => { ipcRenderer.on('close-request', () => callback()); return () => ipcRenderer.off('close-request', callback); },
     notifyCloseWindow: () => ipcRenderer.send('close-callback'),
+    openInNewWindow: (data: FileOpenData) => ipcRenderer.invoke('app:openInNewWindow', data),
 } satisfies ElectronAPI);

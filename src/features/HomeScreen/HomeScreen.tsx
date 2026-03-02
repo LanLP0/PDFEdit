@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { UploadCloud, FileText, Clock, File, Trash2, ALargeSmall, ArrowUpNarrowWide, ArrowDownNarrowWide } from 'lucide-react';
 import { getRecentFiles, removeRecentFile } from '../../lib/recentFiles';
 import type { RecentFileEntry } from '../../lib/recentFiles';
-import { openFile } from '../../lib/openFile';
+import { openFile, applyLoadedPdf } from '../../lib/openFile';
 
 export function HomeScreen() {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,12 +35,16 @@ export function HomeScreen() {
     }, [sortType, sortAscending]);
 
     const handleFileSelect = async (file: File) => {
-        await openFile(file);
-        // Refresh recent files list after opening
         try {
-            const files = await getRecentFiles();
-            setRecentFiles(files);
-        } catch (_) { /* ignore */ }
+            const pdf = await openFile(file);
+            if (pdf) {
+                await applyLoadedPdf(pdf);
+            }
+        } catch (err: any) {
+            console.error('Failed to open file', err);
+            // We could bubble this up to App's ErrorModal, but for now console is enough 
+            // since App also catches drops.
+        }
     };
 
     const handleRemoveRecent = async (e: React.MouseEvent, id: string) => {
