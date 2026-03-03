@@ -1,4 +1,5 @@
 # PDFEdit
+
 <p align="center">
   <img src="src/assets/icon.svg" alt="PDFEdit Logo" width="128">
 </p>
@@ -27,41 +28,41 @@ More images can be found in [Showcases](#showcases).
 
 <br/>
 
-***NOTE: This project is mostly vibe-coded with Claude Opus and is still a Work In Progress***
-
 ## Features
 
 - **Cross-Platform:** Run on Browser, Windows, macOS, Linux, and Mobile too!
 - **Integrated UI:** Never have to fish through menus to find the tools you need
 - **Modify PDF:** Merge, Reorder, Rotate, Delete Pages
 - **Various PDF Tools:** Add Text-Image-Link, Add Signature, Highlight, Draw
-- **Google Drive Integration** (Planned)
-- **Request Signature Online** (Planned)
 
 ## Installation
+
 Currently, there are no straight forward installation files for this application.  
 <br/>
-You can run PDFEdit directly on the web at [https://lanlp0.github.io/PDFEdit](https://lanlp0.github.io/PDFEdit).  
+You can run PDFEdit directly on the web at [https://lanlp0.github.io/PDFEdit](https://lanlp0.github.io/PDFEdit).
 
 Or install it from [https://github.com/LanLP0/PDFEdit/actions/workflows/build_electron_app.yml](https://github.com/LanLP0/PDFEdit/actions/workflows/build_electron_app.yml)
+
 - Choose the latest workflow run (the one on top)
 - Click one file from `Artifacts` section depending on your OS to download the app
 
-| OS | Artifact | File | Install |
-| --- | --- | --- | --- |
-| MacOS | `build-artifacts-macos-latest` | `pdfedit-darwin-arm64.zip` | Extract the zip file, find the application and install it |
-| Windows | `build-artifacts-windows-latest` | `pdfedit-win32-x64.zip` | Extract the zip file, find the application and install it |
-| Linux | `build-artifacts-linux-latest` | `pdfedit-linux-x64.zip` | Extract the zip file, find the application and install it |
+| OS      | Artifact                         | File                       | Install                                                   |
+| ------- | -------------------------------- | -------------------------- | --------------------------------------------------------- |
+| MacOS   | `build-artifacts-macos-latest`   | `pdfedit-darwin-arm64.zip` | Extract the zip file, find the application and install it |
+| Windows | `build-artifacts-windows-latest` | `pdfedit-win32-x64.zip`    | Extract the zip file, find the application and install it |
+| Linux   | `build-artifacts-linux-latest`   | `pdfedit-linux-x64.zip`    | Extract the zip file, find the application and install it |
 
 - Congratulations, you can now use **PDFEdit**!
 
 ## Getting Started (For Developer)
 
 ### Prerequisites
+
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - npm
 
 ### Installation
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/LanLP0/PDFEdit.git
@@ -94,20 +95,29 @@ Contributions are what make the open source community such an amazing place to l
 
 Distributed under the `GNU GPLv3` License. See [LICENSE](./LICENSE) for more information.
 
-
 ## Showcases
 
 ### Homepage
+
 ![Homepage](Assets/Screenshots/Homepage.png "Homepage")
 
 ### Editpage
+
 ![Editpage](Assets/Screenshots/Editpage.png "Editpage")
 
 ### Annotations
+
 ![Annotations](Assets/Screenshots/Editpage_Annotations.png "Annotations")
 
 ### Signature
+
 ![Signature](Assets/Screenshots/Editpage_Signature.png "Signature")
 
-### Mobile
+### Desktop
+
+![Desktop](Assets/Screenshots/Desktop.png "Desktop")
+
+### Mobile (Browser)
+
 ![Mobile](Assets/Screenshots/Mobile_Editpage.png "Mobile")
+![Mobile Sidebar](Assets/Screenshots/Mobile_Editpage_Sidebar.png "Mobile")

@@ -42,9 +42,9 @@ export function ConfirmationModal({
         switch (variant) {
             case 'danger':
             case 'warning':
-                return <AlertTriangle className={variant === 'danger' ? 'text-red-500' : 'text-amber-500'} size={24} />;
+                return <AlertTriangle className={variant === 'danger' ? 'text-red-500' : 'text-amber-500'} size={30} />;
             default:
-                return <HelpCircle className="text-primary" size={24} />;
+                return <HelpCircle className="text-primary" size={30} />;
         }
     };
 
@@ -65,13 +65,13 @@ export function ConfirmationModal({
                     <X size={20} />
                 </button>
 
-                <div className="flex items-start gap-4 mb-6">
-                    <div className="shrink-0 mt-1">
+                <div className="mb-6">
+                    <div className="shrink-0 mt-1 mb-4">
                         {getIcon()}
                     </div>
-                    <div>
+                    <div className="w-full">
                         <h2 className="text-lg font-semibold text-(--color-text-main) mb-1">{title}</h2>
-                        <p className="text-sm text-(--color-text-muted) leading-relaxed truncate">
+                        <p className="text-sm text-(--color-text-muted) leading-relaxed">
                             {description}
                         </p>
                     </div>
