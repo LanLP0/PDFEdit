@@ -32,8 +32,8 @@ export function FileConflictModal({
                 </div>
 
                 <h2 className="text-xl font-bold text-(--color-text-main) mb-2">Unsaved Changes</h2>
-                <p className="text-sm text-(--color-text-muted) mb-6">
-                    You're opening <span className="font-semibold text-(--color-text-main)">"{fileName}"</span>, but your current document has unsaved changes.
+                <p className="text-sm text-(--color-text-muted) mb-6 w-full">
+                    You're opening <span className="font-semibold text-(--color-text-main)">"{fileName.length > 28 ? fileName.slice(0, 20) + '...' + fileName.slice(-8) : fileName}"</span>, but your current document has unsaved changes.
                 </p>
 
                 <div className="w-full space-y-3">

@@ -71,7 +71,7 @@ export function ConfirmationModal({
                     </div>
                     <div>
                         <h2 className="text-lg font-semibold text-(--color-text-main) mb-1">{title}</h2>
-                        <p className="text-sm text-(--color-text-muted) leading-relaxed">
+                        <p className="text-sm text-(--color-text-muted) leading-relaxed truncate">
                             {description}
                         </p>
                     </div>

@@ -103,7 +103,7 @@ export function Header() {
                                 <input
                                     ref={nameInputRef}
                                     type="text"
-                                    className="text-sm px-3 py-1 bg-transparent outline-none text-(--color-text-main) font-medium min-w-[120px]"
+                                    className="text-sm px-3 py-1 bg-transparent outline-none text-(--color-text-main) font-medium min-w-[80px] md:min-w-[120px]"
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
                                     onBlur={finishEditing}

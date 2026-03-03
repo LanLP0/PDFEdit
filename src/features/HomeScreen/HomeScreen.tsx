@@ -3,6 +3,7 @@ import { UploadCloud, FileText, Clock, File, Trash2, ALargeSmall, ArrowUpNarrowW
 import { getRecentFiles, onRecentFilesUpdated, removeRecentFile } from '../../lib/recentFiles';
 import type { RecentFileEntry } from '../../lib/recentFiles';
 import { openFile, openFilePath, applyLoadedPdf } from '../../lib/openFile';
+import { isElectron } from '../../lib/electron';
 
 export function HomeScreen() {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -175,7 +176,7 @@ export function HomeScreen() {
                                 <h3 className="font-semibold text-(--color-text-main) mb-1 truncate" title={recent.name}>{recent.name}</h3>
                                 <p className="text-xs text-(--color-text-muted) mb-1">
                                     {recent.pageCount} pages
-                                    {recent.locationType === 'Web' && <span className="ml-2 italic text-amber-500">• File not available</span>}
+                                    {isElectron && recent.locationType === 'Web' && <span className="ml-2 italic text-amber-500">• File not available</span>}
                                 </p>
                                 <div className="flex justify-between items-center text-sm text-(--color-text-muted) mt-auto pt-4 border-t border-(--color-border)">
                                     <span>{formatDate(recent.lastOpened)}</span>
