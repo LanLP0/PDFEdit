@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { themeSynced } from '../lib/PersistentStorage';
 
 // The Move tool is a dummy tool used to activate the touchmove block for mobile users. Other tools function in the editor as expected.
-export type ToolType = 'pointer' | 'text' | 'image' | 'signature' | 'highlight' | 'draw' | 'link' | 'move';
+export type ToolType = 'pointer' | 'text' | 'image' | 'signature' | 'highlight' | 'draw' | 'link' | 'move' | 'rectangle';
 
 export interface TextStyle {
   fontFamily: string;
@@ -49,7 +49,7 @@ export interface LinkPayload {
 
 export interface Annotation {
   id: string;
-  type: 'text' | 'image' | 'signature' | 'highlight' | 'draw' | 'link';
+  type: 'text' | 'image' | 'signature' | 'highlight' | 'draw' | 'link' | 'rectangle';
   x: number;
   y: number;
   width?: number;
@@ -60,6 +60,13 @@ export interface Annotation {
   strokeColor?: string;
   strokeWidth?: number;
   strokeOpacity?: number;
+  // Rectangle-specific
+  rectWidth?: number;
+  rectHeight?: number;
+  fillColor?: string;
+  outlineOnly?: boolean;
+  borderWidth?: number;
+  rectOpacity?: number;
 }
 
 export interface BrushSettings {
@@ -67,6 +74,10 @@ export interface BrushSettings {
   highlightColor: string;
   drawSize: number;
   drawColor: string;
+  rectangleColor: string;
+  rectangleOutlineOnly: boolean;
+  rectangleBorderWidth: number;
+  rectangleOpacity: number;
 }
 
 export const defaultBrushSettings: BrushSettings = {
@@ -74,6 +85,10 @@ export const defaultBrushSettings: BrushSettings = {
   highlightColor: '#FFFF00',
   drawSize: 3,
   drawColor: '#000000',
+  rectangleColor: '#3B82F6',
+  rectangleOutlineOnly: false,
+  rectangleBorderWidth: 2,
+  rectangleOpacity: 1,
 };
 
 export interface Modifications {

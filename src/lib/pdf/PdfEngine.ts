@@ -371,6 +371,39 @@ export class PdfEngine {
                     height,
                 });
             }
+
+            // Rectangle annotations
+            if (ann.type === 'rectangle') {
+                const rw = (ann.rectWidth || 10) / 100 * width;
+                const rh = (ann.rectHeight || 10) / 100 * height;
+                const rx = (ann.x / 100) * width;
+                // PDF y-axis is bottom-up
+                const ry = height - ((ann.y / 100) * height) - rh;
+                const color = hexToRgb(ann.fillColor || ann.strokeColor || '#3B82F6');
+                const outlineOnly = ann.outlineOnly ?? false;
+                const borderW = ann.borderWidth ?? 2;
+                const rectOpacity = ann.rectOpacity ?? 0.6;
+
+                if (outlineOnly) {
+                    page.drawRectangle({
+                        x: rx,
+                        y: ry,
+                        width: rw,
+                        height: rh,
+                        borderColor: rgb(color.r, color.g, color.b),
+                        borderWidth: borderW,
+                    });
+                } else {
+                    page.drawRectangle({
+                        x: rx,
+                        y: ry,
+                        width: rw,
+                        height: rh,
+                        color: rgb(color.r, color.g, color.b),
+                        opacity: rectOpacity,
+                    });
+                }
+            }
         }
     }
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { usePDFStore } from '../../store/usePDFStore';
 import type { ToolType } from '../../store/usePDFStore';
 import { defaultTextStyle, availableFonts } from '../../store/usePDFStore';
-import { MousePointer2, Type, Image as ImageIcon, PenTool, Link2, Highlighter, Pencil, Move, Bold, Italic, Underline, ChevronLeft } from 'lucide-react';
+import { MousePointer2, Type, Image as ImageIcon, PenTool, Link2, Highlighter, Pencil, Move, Bold, Italic, Underline, ChevronLeft, Square } from 'lucide-react';
 import { ConfirmationModal } from '../Modal/ConfirmationModal';
 
 const tools: { id: ToolType; icon: typeof MousePointer2; label: string }[] = [
@@ -13,6 +13,7 @@ const tools: { id: ToolType; icon: typeof MousePointer2; label: string }[] = [
     { id: 'signature', icon: PenTool, label: 'Sign' },
     { id: 'highlight', icon: Highlighter, label: 'Highlight' },
     { id: 'draw', icon: Pencil, label: 'Draw' },
+    { id: 'rectangle', icon: Square, label: 'Rectangle' },
     { id: 'move', icon: Move, label: 'Move' },
 ];
 
@@ -36,6 +37,7 @@ export function ToolsPanel({ isSmallWidth }: ToolsPanelProps) {
     const showTextOptions = activeTool === 'text' || isEditingTextAnn;
     const showHighlightOptions = activeTool === 'highlight';
     const showDrawOptions = activeTool === 'draw';
+    const showRectOptions = activeTool === 'rectangle';
 
     const currentFontDef = availableFonts.find(f => f.name === activeStyle.fontFamily) || availableFonts[0];
 
@@ -51,6 +53,7 @@ export function ToolsPanel({ isSmallWidth }: ToolsPanelProps) {
         if (showTextOptions) return activeStyle.color;
         if (showHighlightOptions) return brushSettings.highlightColor;
         if (showDrawOptions) return brushSettings.drawColor;
+        if (showRectOptions) return brushSettings.rectangleColor;
         return '#000000';
     };
 
@@ -58,9 +61,10 @@ export function ToolsPanel({ isSmallWidth }: ToolsPanelProps) {
         if (showTextOptions) handleStyleChange({ color });
         else if (showHighlightOptions) setBrushSettings({ highlightColor: color });
         else if (showDrawOptions) setBrushSettings({ drawColor: color });
+        else if (showRectOptions) setBrushSettings({ rectangleColor: color });
     };
 
-    const showColorPicker = showTextOptions || showHighlightOptions || showDrawOptions;
+    const showColorPicker = showTextOptions || showHighlightOptions || showDrawOptions || showRectOptions;
 
     const handleGoHome = () => {
         if (!usePDFStore.getState().haveUnsavedChanges()) { closeDocument(); return; }
@@ -131,6 +135,32 @@ export function ToolsPanel({ isSmallWidth }: ToolsPanelProps) {
                             <span className="text-[10px] text-(--color-text-muted) block mb-1">Size: {brushSettings.drawSize}px</span>
                             <input type="range" min="1" max="50" value={brushSettings.drawSize}
                                 onChange={(e) => setBrushSettings({ drawSize: Number(e.target.value) })}
+                                className="w-full h-1.5 rounded-full appearance-none bg-(--color-border) accent-primary" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showRectOptions && (
+                <div className="mx-3">
+                    <div className="bg-(--color-bg-app) border border-(--color-border) rounded-xl p-3 space-y-2.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-(--color-text-muted)">Rectangle</span>
+                        <label className="flex items-center justify-between cursor-pointer">
+                            <span className="text-xs text-(--color-text-muted)">Draw Outline</span>
+                            <input type="checkbox" checked={brushSettings.rectangleOutlineOnly}
+                                onChange={(e) => setBrushSettings({ rectangleOutlineOnly: e.target.checked })}
+                                className="accent-primary w-4 h-4" />
+                        </label>
+                        <div>
+                            <span className="text-[10px] text-(--color-text-muted) block mb-1">Border: {brushSettings.rectangleBorderWidth}px</span>
+                            <input type="range" min="1" max="10" value={brushSettings.rectangleBorderWidth}
+                                onChange={(e) => setBrushSettings({ rectangleBorderWidth: Number(e.target.value) })}
+                                className="w-full h-1.5 rounded-full appearance-none bg-(--color-border) accent-primary" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] text-(--color-text-muted) block mb-1">Opacity: {Math.round(brushSettings.rectangleOpacity * 100)}%</span>
+                            <input type="range" min="5" max="100" value={Math.round(brushSettings.rectangleOpacity * 100)}
+                                onChange={(e) => setBrushSettings({ rectangleOpacity: Number(e.target.value) / 100 })}
                                 className="w-full h-1.5 rounded-full appearance-none bg-(--color-border) accent-primary" />
                         </div>
                     </div>
