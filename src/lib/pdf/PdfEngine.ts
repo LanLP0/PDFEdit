@@ -379,10 +379,10 @@ export class PdfEngine {
                 const rx = (ann.x / 100) * width;
                 // PDF y-axis is bottom-up
                 const ry = height - ((ann.y / 100) * height) - rh;
-                const color = hexToRgb(ann.fillColor || ann.strokeColor || '#3B82F6');
-                const outlineOnly = ann.outlineOnly ?? false;
-                const borderW = ann.borderWidth ?? 2;
-                const rectOpacity = ann.rectOpacity ?? 0.6;
+                const color = hexToRgb(ann.rectStyle!.fillColor || ann.strokeColor || '#3B82F6');
+                const outlineOnly = ann.rectStyle!.outlineOnly ?? false;
+                const borderW = ann.rectStyle!.borderWidth ?? 2;
+                const rectOpacity = ann.rectStyle!.opacity ?? 0.6;
 
                 if (outlineOnly) {
                     page.drawRectangle({

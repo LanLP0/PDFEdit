@@ -13,6 +13,13 @@ export interface TextStyle {
   color: string;
 }
 
+export interface RectangleStyle {
+  fillColor: string;
+  outlineOnly: boolean;
+  borderWidth: number;
+  opacity: number;
+}
+
 // Font definitions with variant support info
 export interface FontDef {
   name: string;
@@ -35,6 +42,13 @@ export const defaultTextStyle: TextStyle = {
   italic: false,
   underline: false,
   color: '#000000',
+};
+
+export const defaultRectangleStyle: RectangleStyle = {
+  fillColor: '#000000',
+  outlineOnly: false,
+  borderWidth: 2,
+  opacity: 1,
 };
 
 export interface StrokePoint {
@@ -63,10 +77,7 @@ export interface Annotation {
   // Rectangle-specific
   rectWidth?: number;
   rectHeight?: number;
-  fillColor?: string;
-  outlineOnly?: boolean;
-  borderWidth?: number;
-  rectOpacity?: number;
+  rectStyle?: RectangleStyle;
 }
 
 export interface BrushSettings {
@@ -74,10 +85,6 @@ export interface BrushSettings {
   highlightColor: string;
   drawSize: number;
   drawColor: string;
-  rectangleColor: string;
-  rectangleOutlineOnly: boolean;
-  rectangleBorderWidth: number;
-  rectangleOpacity: number;
 }
 
 export const defaultBrushSettings: BrushSettings = {
@@ -85,10 +92,6 @@ export const defaultBrushSettings: BrushSettings = {
   highlightColor: '#FFFF00',
   drawSize: 3,
   drawColor: '#000000',
-  rectangleColor: '#3B82F6',
-  rectangleOutlineOnly: false,
-  rectangleBorderWidth: 2,
-  rectangleOpacity: 1,
 };
 
 export interface Modifications {
@@ -125,6 +128,7 @@ export interface AppSettings {
   sidebarMode: 'tools' | 'thumbnails' | 'bookmarks';
   activeTool: ToolType;
   currentTextStyle: TextStyle;
+  currentRectangleStyle: RectangleStyle;
   brushSettings: BrushSettings;
   zoom: number;
   sidebarCollapse: boolean;
@@ -154,6 +158,7 @@ interface PDFStore {
   setSidebarMode: (mode: AppSettings['sidebarMode']) => void;
   setActiveTool: (tool: ToolType) => void;
   setCurrentTextStyle: (style: Partial<TextStyle>) => void;
+  setCurrentRectangleStyle: (style: Partial<RectangleStyle>) => void;
   setBrushSettings: (settings: Partial<BrushSettings>) => void;
   setZoom: (zoom: number) => void;
   setSidebarCollapse: (sidebarCollapse: boolean) => void;
@@ -198,6 +203,7 @@ const initialSettings: AppSettings = {
   sidebarMode: 'tools',
   activeTool: 'pointer',
   currentTextStyle: { ...defaultTextStyle },
+  currentRectangleStyle: { ...defaultRectangleStyle },
   brushSettings: { ...defaultBrushSettings },
   zoom: 100,
   sidebarCollapse: false,
@@ -299,6 +305,9 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
   setActiveTool: (activeTool) => set((state) => ({ settings: { ...state.settings, activeTool } })),
   setCurrentTextStyle: (style) => set((state) => ({
     settings: { ...state.settings, currentTextStyle: { ...state.settings.currentTextStyle, ...style } }
+  })),
+  setCurrentRectangleStyle: (style) => set((state) => ({
+    settings: { ...state.settings, currentRectangleStyle: { ...state.settings.currentRectangleStyle, ...style } }
   })),
   setBrushSettings: (bs) => set((state) => ({
     settings: { ...state.settings, brushSettings: { ...state.settings.brushSettings, ...bs } }

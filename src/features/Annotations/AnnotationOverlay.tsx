@@ -187,7 +187,7 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
       const h = Math.abs(rectEnd.y - rectStart.y);
 
       if (w > 0.5 && h > 0.5) {
-        const bs = usePDFStore.getState().settings.brushSettings;
+        const rectStyle = usePDFStore.getState().settings.currentRectangleStyle;
         addAnnotation(pageId, {
           id: crypto.randomUUID(),
           type: "rectangle",
@@ -196,11 +196,12 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
           payload: null,
           rectWidth: w,
           rectHeight: h,
-          fillColor: bs.rectangleColor,
-          outlineOnly: bs.rectangleOutlineOnly,
-          borderWidth: bs.rectangleBorderWidth,
-          strokeColor: bs.rectangleColor,
-          rectOpacity: bs.rectangleOpacity,
+          rectStyle: {
+            fillColor: rectStyle.fillColor,
+            outlineOnly: rectStyle.outlineOnly,
+            borderWidth: rectStyle.borderWidth,
+            opacity: rectStyle.opacity,
+          },
         });
       }
       setRectStart(null);
@@ -263,6 +264,7 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
   };
 
   const bs = settings.brushSettings;
+  const rectStyle = settings.currentRectangleStyle;
   const isHighlightActive = activeTool === "highlight";
   const currentColor = isHighlightActive ? bs.highlightColor : bs.drawColor;
 
@@ -328,10 +330,10 @@ export function AnnotationOverlay({ pageId, zoom }: AnnotationOverlayProps) {
             top: `${rectPreview.y}%`,
             width: `${rectPreview.w}%`,
             height: `${rectPreview.h}%`,
-            borderColor: bs.rectangleColor,
-            backgroundColor: bs.rectangleOutlineOnly
+            borderColor: rectStyle.fillColor,
+            backgroundColor: rectStyle.outlineOnly
               ? "transparent"
-              : `${bs.rectangleColor}22`,
+              : `${rectStyle.fillColor}22`,
           }}
         />
       )}
@@ -580,17 +582,13 @@ function DraggableAnnotation({
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const activeTool = usePDFStore((state) => state.settings.activeTool);
   const updateAnnotation = usePDFStore((state) => state.updateAnnotation);
   const deleteAnnotation = usePDFStore((state) => state.deleteAnnotation);
   const selectAnnotation = usePDFStore((state) => state.selectAnnotation);
-  const setActiveTool = usePDFStore((state) => state.setActiveTool);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     e.stopPropagation();
     selectAnnotation(pageId, annotation.id);
-    if (annotation.type === "text" && activeTool !== "move")
-      setActiveTool("text");
     setIsDragging(true);
     usePDFStore.getState().suspendRecordingUndo();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -779,10 +777,11 @@ function RectAnnotation({
     deleteAnnotation(pageId, annotation.id);
   };
 
-  const color = annotation.fillColor || annotation.strokeColor || "#3B82F6";
-  const outlineOnly = annotation.outlineOnly ?? false;
-  const borderW = annotation.borderWidth ?? 2;
-  const opacity = annotation.rectOpacity ?? 0.6;
+  const color =
+    annotation.rectStyle?.fillColor || annotation.strokeColor || "#000000";
+  const outlineOnly = annotation.rectStyle?.outlineOnly ?? false;
+  const borderW = annotation.rectStyle?.borderWidth ?? 2;
+  const opacity = annotation.rectStyle?.opacity ?? 1;
 
   return (
     <div
