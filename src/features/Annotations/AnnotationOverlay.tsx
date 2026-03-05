@@ -448,7 +448,6 @@ function DraggableAnnotation({ pageId, annotation, containerRef, isSelected, sca
         e.stopPropagation();
         if (annotation.type === 'text') {
             setIsEditing(true);
-            usePDFStore.getState().suspendRecordingUndo();
         }
         if (annotation.type === 'link') {
             const payload = annotation.payload as LinkPayload;

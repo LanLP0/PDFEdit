@@ -2,6 +2,7 @@ import { usePDFStore } from '../store/usePDFStore';
 import { addRecentFile } from './recentFiles';
 import type { RecentFileEntry } from './recentFiles';
 import { isElectron, getElectronAPI } from './electron';
+import { readOutline, readBookmarkMetadata } from './pdf/outlineReader';
 
 /**
  * Check whether the currently loaded document has any modifications.
@@ -54,6 +55,25 @@ export async function preparePdfBuffer(name: string, size: number, buffer: Array
 export async function applyLoadedPdf(pdf: LoadedPdf) {
     const state = usePDFStore.getState();
     state.loadDocument({ name: pdf.name, size: pdf.size } as File, pdf.buffer, pdf.pages);
+
+    // Read outline and bookmarks asynchronously — use COPIES of the buffer
+    // because pdfjs.getDocument() transfers ownership and detaches the original.
+    const bufferCopyOutline = pdf.buffer.slice(0);
+    readOutline(bufferCopyOutline, pdf.pages).then((outline) => {
+        usePDFStore.setState((s) => ({ document: { ...s.document, outline } }));
+    }).catch((err) => {
+        console.warn('Failed to read PDF outline:', err);
+    });
+
+    // Restore user bookmarks from custom metadata (round-trip support)
+    const bufferCopyMeta = pdf.buffer.slice(0);
+    readBookmarkMetadata(bufferCopyMeta).then((bookmarks) => {
+        if (bookmarks.length > 0) {
+            usePDFStore.setState((s) => ({ document: { ...s.document, bookmarks } }));
+        }
+    }).catch((err) => {
+        console.warn('Failed to read bookmark metadata:', err);
+    });
 
     const entry: RecentFileEntry = {
         id: `${pdf.name}-${pdf.size}`,

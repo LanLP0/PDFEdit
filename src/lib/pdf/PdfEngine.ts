@@ -1,5 +1,5 @@
-import { PDFDocument, PDFPage, degrees, rgb, StandardFonts } from 'pdf-lib';
-import type { DocumentState, Annotation, LinkPayload } from '../../store/usePDFStore';
+import { PDFDocument, PDFPage, PDFName, PDFHexString, degrees, rgb, StandardFonts } from 'pdf-lib';
+import type { DocumentState, Annotation, LinkPayload, Bookmark, OutlineItem } from '../../store/usePDFStore';
 
 // Parse hex color to rgb values 0-1
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -66,7 +66,114 @@ export class PdfEngine {
             newPdf.addPage(copiedPage);
         }
 
+        // Write outlines (bookmarks + original outline) into the PDF
+        this.writeOutline(newPdf, state.bookmarks, state.outline, mods.pageOrder);
+
+        // Write custom metadata for bookmark round-tripping
+        if (state.bookmarks.length > 0) {
+            this.writeBookmarkMetadata(newPdf, state.bookmarks);
+        }
+
         return await newPdf.save();
+    }
+
+    /**
+     * Build a PDF outline tree from user bookmarks and original outline items.
+     * Uses the PDF spec linked-list structure (First/Last/Next/Prev/Parent).
+     */
+    private static writeOutline(
+        doc: PDFDocument,
+        bookmarks: Bookmark[],
+        outline: OutlineItem[],
+        pageOrder: string[],
+    ) {
+        // Flatten outline items into a list for the top level
+        interface FlatEntry { title: string; pageIndex: number; children?: FlatEntry[] }
+
+        const flattenOutline = (items: OutlineItem[]): FlatEntry[] =>
+            items.map(item => ({
+                title: item.title,
+                pageIndex: pageOrder.indexOf(item.pageId),
+                children: item.children.length > 0 ? flattenOutline(item.children) : undefined,
+            }));
+
+        // Build combined entries: user bookmarks first, then outline
+        const entries: FlatEntry[] = [];
+
+        for (const bm of bookmarks) {
+            const idx = pageOrder.indexOf(bm.pageId);
+            if (idx >= 0) entries.push({ title: bm.title, pageIndex: idx });
+        }
+
+        entries.push(...flattenOutline(outline));
+
+        if (entries.length === 0) return;
+
+        const context = doc.context;
+        const pages = doc.getPages();
+
+        // Helper: create outline item dicts recursively and return refs
+        const createItems = (items: FlatEntry[], parentRef: any): { refs: any[]; count: number } => {
+            const refs: any[] = [];
+            let totalCount = 0;
+
+            for (const item of items) {
+                const pageIdx = Math.max(0, Math.min(item.pageIndex, pages.length - 1));
+                const pageRef = pages[pageIdx].ref;
+
+                const dict = context.obj({
+                    Title: PDFHexString.fromText(item.title),
+                    Parent: parentRef,
+                    Dest: [pageRef, 'Fit'],
+                });
+                const ref = context.register(dict);
+                refs.push(ref);
+                totalCount++;
+
+                // Recurse for children
+                if (item.children && item.children.length > 0) {
+                    const childResult = createItems(item.children, ref);
+                    dict.set(PDFName.of('First'), childResult.refs[0]);
+                    dict.set(PDFName.of('Last'), childResult.refs[childResult.refs.length - 1]);
+                    dict.set(PDFName.of('Count'), context.obj(childResult.count));
+                    totalCount += childResult.count;
+                }
+            }
+
+            // Link siblings with Next/Prev
+            for (let i = 0; i < refs.length; i++) {
+                const dict = context.lookup(refs[i]) as any;
+                if (i > 0) dict.set(PDFName.of('Prev'), refs[i - 1]);
+                if (i < refs.length - 1) dict.set(PDFName.of('Next'), refs[i + 1]);
+            }
+
+            return { refs, count: totalCount };
+        };
+
+        // Create root Outlines dictionary
+        const outlinesDict = context.obj({
+            Type: 'Outlines',
+        });
+        const outlinesRef = context.register(outlinesDict);
+
+        const { refs, count } = createItems(entries, outlinesRef);
+
+        outlinesDict.set(PDFName.of('First'), refs[0]);
+        outlinesDict.set(PDFName.of('Last'), refs[refs.length - 1]);
+        outlinesDict.set(PDFName.of('Count'), context.obj(count));
+
+        // Set on catalog
+        doc.catalog.set(PDFName.of('Outlines'), outlinesRef);
+    }
+
+    /**
+     * Store bookmarks as custom metadata for lossless round-tripping.
+     * Base64-encoded to avoid comma conflicts in PDF keywords format.
+     */
+    private static writeBookmarkMetadata(doc: PDFDocument, bookmarks: Bookmark[]) {
+        const json = JSON.stringify(bookmarks);
+        const b64 = btoa(unescape(encodeURIComponent(json)));
+        doc.setKeywords([`pdfedit-bookmarks:${b64}`]);
     }
 
     private static async applyAnnotations(doc: PDFDocument, page: PDFPage, annotations: Annotation[]) {

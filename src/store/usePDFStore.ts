@@ -83,17 +83,31 @@ export interface Modifications {
   deletedPages: string[];
 }
 
+export interface Bookmark {
+  id: string;
+  title: string;
+  pageId: string; // references pageOrder IDs, e.g. "page-3"
+}
+
+export interface OutlineItem {
+  title: string;
+  pageId: string;
+  children: OutlineItem[];
+}
+
 export interface DocumentState {
   originalFile: File | null;
   fileName: string;
   fileExtension: string;
   originalBytes: ArrayBuffer | null;
   modifications: Modifications;
+  outline: OutlineItem[];
+  bookmarks: Bookmark[];
 }
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'adaptive';
-  sidebarMode: 'tools' | 'thumbnails';
+  sidebarMode: 'tools' | 'thumbnails' | 'bookmarks';
   activeTool: ToolType;
   currentTextStyle: TextStyle;
   brushSettings: BrushSettings;
@@ -141,6 +155,11 @@ interface PDFStore {
   updateAnnotation: (pageId: string, annotationId: string, updates: Partial<Annotation>) => void;
   deleteAnnotation: (pageId: string, annotationId: string) => void;
 
+  // Bookmarks
+  addBookmark: (bookmark: Bookmark) => void;
+  removeBookmark: (bookmarkId: string) => void;
+  updateBookmark: (bookmarkId: string, updates: Partial<Omit<Bookmark, 'id'>>) => void;
+
   haveUnsavedChanges: () => boolean;
   closeDocument: () => void;
 }
@@ -155,6 +174,8 @@ const initialDocumentState: DocumentState = {
   fileExtension: '.pdf',
   originalBytes: null,
   modifications: { ...emptyModifications },
+  outline: [],
+  bookmarks: [],
 };
 
 const initialSettings: AppSettings = {
@@ -279,7 +300,7 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
     const name = dotIdx > 0 ? file.name.substring(0, dotIdx) : file.name;
     const ext = dotIdx > 0 ? file.name.substring(dotIdx) : '.pdf';
     return {
-      document: { originalFile: file, fileName: name, fileExtension: ext, originalBytes: bytes, modifications: { pageOrder: initialPages, rotations: {}, annotations: {}, deletedPages: [] } },
+      document: { originalFile: file, fileName: name, fileExtension: ext, originalBytes: bytes, modifications: { pageOrder: initialPages, rotations: {}, annotations: {}, deletedPages: [] }, outline: [], bookmarks: [] },
       settings: { ...initialSettings, theme: get().settings.theme },
       undoStack: [],
       redoStack: [],
@@ -348,10 +369,11 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
     const mods = state.document.modifications;
     const snapshot = cloneMods(mods);
     state.changedSinceLastUndo = true;
+    // Auto-remove bookmarks pointing to the deleted page
+    const filteredBookmarks = state.document.bookmarks.filter(b => b.pageId !== pageId);
     if (!state.recordingUndo) {
-      // Update document (still display) but not the undo stack
       set({
-        document: { ...state.document, modifications: { ...mods, deletedPages: [...mods.deletedPages, pageId], pageOrder: mods.pageOrder.filter(id => id !== pageId) } },
+        document: { ...state.document, bookmarks: filteredBookmarks, modifications: { ...mods, deletedPages: [...mods.deletedPages, pageId], pageOrder: mods.pageOrder.filter(id => id !== pageId) } },
         redoStack: [],
         canUndo: false,
         canRedo: false,
@@ -359,7 +381,7 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
       return;
     }
     set({
-      document: { ...state.document, modifications: { ...mods, deletedPages: [...mods.deletedPages, pageId], pageOrder: mods.pageOrder.filter(id => id !== pageId) } },
+      document: { ...state.document, bookmarks: filteredBookmarks, modifications: { ...mods, deletedPages: [...mods.deletedPages, pageId], pageOrder: mods.pageOrder.filter(id => id !== pageId) } },
       undoStack: [...state.undoStack, snapshot].slice(-MAX_HISTORY),
       redoStack: [],
       canUndo: true,
@@ -501,6 +523,17 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
       canRedo: false,
     });
   },
+
+  // --- Bookmarks (no undo tracking) ---
+  addBookmark: (bookmark) => set((state) => ({
+    document: { ...state.document, bookmarks: [...state.document.bookmarks, bookmark] }
+  })),
+  removeBookmark: (bookmarkId) => set((state) => ({
+    document: { ...state.document, bookmarks: state.document.bookmarks.filter(b => b.id !== bookmarkId) }
+  })),
+  updateBookmark: (bookmarkId, updates) => set((state) => ({
+    document: { ...state.document, bookmarks: state.document.bookmarks.map(b => b.id === bookmarkId ? { ...b, ...updates } : b) }
+  })),
 
   haveUnsavedChanges: () => {
     const state = get();
