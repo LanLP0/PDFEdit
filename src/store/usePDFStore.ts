@@ -300,7 +300,7 @@ export const usePDFStore = create<PDFStore>()((set, get) => ({
   },
 
   // --- Settings (no undo tracking) ---
-  setTheme: (theme) => { if (theme === get().settings.theme) return; themeSynced.set(theme); set((state) => ({ settings: { ...state.settings, theme } })); },
+  setTheme: (theme) => { if (theme === get().settings.theme) return; set((state) => ({ settings: { ...state.settings, theme } })); themeSynced.set(theme); },
   setSidebarMode: (sidebarMode) => set((state) => ({ settings: { ...state.settings, sidebarMode } })),
   setActiveTool: (activeTool) => set((state) => ({ settings: { ...state.settings, activeTool } })),
   setCurrentTextStyle: (style) => set((state) => ({
