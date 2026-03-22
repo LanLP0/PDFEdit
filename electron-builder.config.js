@@ -78,11 +78,11 @@ const config = {
     target: [
       {
         target: "dmg",
-        arch: "universal",
+        arch: ["arm64"],
       },
       {
         target: "zip",
-        arch: "universal",
+        arch: ["arm64"],
       },
     ],
     artifactName: `${BINARY_PREFIX}-\${version}.\${ext}`,
