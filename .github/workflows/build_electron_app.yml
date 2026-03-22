@@ -18,16 +18,20 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          cache: 'npm'
+          cache: "npm"
 
       - name: Make Electron
         run: |
           npm ci
-          npm run make
+          npm run build:electron
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v7.0.0
         with:
           name: build-artifacts-${{ matrix.os }}
-          path: "out/make/"
+          path: |
+            out/
+            !out/*-unpacked/
+            !*.yml
+            !*.blockmap
           if-no-files-found: "error"

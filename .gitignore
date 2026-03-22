@@ -27,3 +27,4 @@ release
 
 out/
 .vite/
+build/
